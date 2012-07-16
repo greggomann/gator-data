@@ -196,20 +196,7 @@ var READER_CONF = (function() {
         'layers'        : ['ppdb'],
         'placeholder'   : true
     },
-	MASCP.ProteotypicReader, {
-        'definition'    : MASCP.ProteotypicReader,
-        'nicename'      : 'Proteotypic',
-        'error_url'     : '',
-        'success_url'   : '',
-        'result'        : function() {
-								if (this.result.getPeptides().length > 0) {
-                                    jQuery('#proteotypic_placeholder').show();
-                                }
-                            },
-        'layers'        : ['proteotypic_experimental'],
-        'placeholder'   : true
-    },
-    MASCP.SnpReader, {
+	MASCP.SnpReader, {
         'definition'    : MASCP.SnpReader,
         'nicename'      : 'Snps',
         'result'        : function() {            

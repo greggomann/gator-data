@@ -24,7 +24,6 @@ var resource_map = {
     'ubiquitin' : MASCP.UbiquitinReader,
     'processing': MASCP.ProcessingReader,
     'nssnps'    : MASCP.SnpReader,
-    'proteotypic' : MASCP.ProteotypicReader
 };
 
 repl = require('repl');
