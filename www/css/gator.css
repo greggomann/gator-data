@@ -55,12 +55,26 @@ h1, h2 {
     
     #description_container {
         display: block;
-        right: 120px;
-        left: 280px;
+        right: 200px;
+        left: 270px;
         position: absolute;
         height: 70px;
         font-size: 12px;
         overflow: hidden;
+    }
+
+    #abundance_container {
+        display: block;
+        right: 110px;
+        width: 80px;
+        height: 70px;
+        font-size: 12px;
+        text-align: center;
+        position: absolute;
+    }
+
+    #abundance_container .inset {
+        width: 60px;
     }
     
     #help_container {
@@ -124,6 +138,14 @@ h1, h2 {
             
     #description_container #description {
         font-size: 25px;
+        height: 45px;
+        width: 100%;
+        overflow: auto;
+        white-space: nowrap;
+    }
+
+    #abundance_container #abundance {
+        font-size: 35px;
         height: 45px;
         width: 100%;
         overflow: auto;

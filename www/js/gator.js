@@ -455,11 +455,22 @@ jQuery(document).ready(function() {
                 document._screen.hide();
             }    
             
-            rendering_readers = null;
+            if (MASCP.Modhunter) {
+                var modHunter = new MASCP.Modhunter();
 
-            if (MASCP.renderer.setModhunterGradient) {
-                MASCP.renderer.setModhunterGradient();
+                modHunter.loadSequence(modHunter, MASCP.renderer.sequence);
+                
+                for (modrdr in all_readers) {
+                    modHunter.countCoverage(modHunter, all_readers[modrdr]);
+                }
+                modHunter.calcScores();
             }
+
+            if (MASCP.renderer.setModhunterGradient && modHunter) {
+                MASCP.renderer.setModhunterGradient(modHunter);
+            }
+
+            rendering_readers = null;
 
         };
         
