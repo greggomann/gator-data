@@ -115,6 +115,20 @@ var READER_CONF = (function() {
         'placeholder'   : true,
         'layers'        : ['arbitrary_datasets']
     },
+	MASCP.ProteotypicReader, {
+        'definition'    : MASCP.ProteotypicReader,
+        'nicename'      : 'Predicted Peptides',
+        'error_url'     : 'http://www.utoronto.ca/emililab/proteogest.htm',
+        'success_url'   : 'http://www.utoronto.ca/emililab/proteogest.htm',
+        'result'        : function() {
+                                if (this.result.getPeptides().length > 0) {
+                                    jQuery('#proteotypic_placeholder').show();
+                                }
+                            },
+        'layers'        : ['proteotypic_experimental'],
+        'staticlink'    : true,
+        'placeholder'   : true
+    },
     MASCP.GelMapReader, { 
         'definition'    : MASCP.GelMapReader,
         'nicename'      : 'GelMap',
@@ -135,7 +149,8 @@ var READER_CONF = (function() {
                                     jQuery('#atchloro_experimental').show();
                                 }
                             },
-        'layers'        : ['atchloro']
+        'layers'        : ['atchloro_experimental'],
+        'placeholder'   : true
     },
     MASCP.AtPeptideReader, {
         'definition'    : MASCP.AtPeptideReader,
@@ -194,20 +209,6 @@ var READER_CONF = (function() {
                                 }
                             },
         'layers'        : ['ppdb'],
-        'placeholder'   : true
-    },
-	MASCP.ProteotypicReader, {
-        'definition'    : MASCP.ProteotypicReader,
-        'nicename'      : 'Predicted Peptides',
-        'error_url'     : 'http://www.utoronto.ca/emililab/proteogest.htm',
-        'success_url'   : 'http://www.utoronto.ca/emililab/proteogest.htm',
-        'result'        : function() {
-                                if (this.result.getPeptides().length > 0) {
-                                    jQuery('#proteotypic_placeholder').show();
-                                }
-                            },
-        'layers'        : ['proteotypic_experimental'],
-        'staticlink'    : true,
         'placeholder'   : true
     },
     MASCP.PubmedReader, {

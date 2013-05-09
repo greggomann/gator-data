@@ -466,8 +466,9 @@ jQuery(document).ready(function() {
                 modHunter.calcScores();
             }
 
-            if (MASCP.renderer.setModhunterGradient && modHunter) {
-                MASCP.renderer.setModhunterGradient(modHunter);
+            if (MASCP.renderer.fillModhunter && modHunter) {
+                MASCP.renderer.fillModhunter(modHunter);
+                rrend();
             }
 
             rendering_readers = null;

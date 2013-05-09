@@ -9,11 +9,11 @@ var argv =  require('optimist')
 MASCP = require('mascp-jstools');
 
 var find_class = function(classname) {
-    for (var reader_class in MASCP) { 
+    for (var reader_class in MASCP) {
         if (MASCP.hasOwnProperty(reader_class) && classname == MASCP[reader_class].toString()) {
             return MASCP[reader_class];
         }
-    }    
+    }
 };
 
 MASCP.events.once('ready',function() {
