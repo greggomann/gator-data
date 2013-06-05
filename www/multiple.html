@@ -395,23 +395,24 @@ At1g73450.1
                     if (this.whole_sequence) {
                         // scan protein sequence and produce regions meeting the minimum mod score
                         for (var j = 0; j < this.whole_sequence.length; j++) {
+                            var k = j+1;
                             var minMet = (this.sequence[j].score >= minModScore);
                             var snpHere = (this.sequence[j].snp_coverage > 0);
                             if (this.sequence[j].score != currScore) {
                                 if (currScore >= minModScore) {
                                     // pepResults contains the left index, right index, and mod score, and a list of nsSNP sites
-                                    pepResults.push([leftIndex, j-1, currScore, snpList]);
+                                    pepResults.push([leftIndex+1, j, currScore, snpList]);
                                     // reset snpList
                                     snpList = [];
                                     if (minMet) {
-                                        snpList.push(j);
+                                        snpList.push(k);
                                         leftIndex = j;
                                     } else {
                                         inPep = false;
                                     }
                                 } else if (minMet) {
                                     if (snpHere) {
-                                        snpList.push(j);
+                                        snpList.push(k);
                                     }
                                     inPep = true;
                                     leftIndex = j;
@@ -419,11 +420,11 @@ At1g73450.1
                                 currScore = this.sequence[j].score;
                             } else if (j == this.whole_sequence.length-1 && currScore >= minModScore) {
                                 if (snpHere) {
-                                    snpList.push(j);
+                                    snpList.push(k);
                                 }
-                                pepResults.push([leftIndex, j, currScore, snpList]);
+                                pepResults.push([leftIndex+1, j+1, currScore, snpList]);
                             } else if (snpHere && inPep) {
-                                snpList.push(j);
+                                snpList.push(k);
                             }
                         }
                     }
