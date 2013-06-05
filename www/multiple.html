@@ -391,6 +391,7 @@ At1g73450.1
                     var leftIndex = 0;
                     var currScore = 0;
                     var errString = '';
+                    var inPep = false;
                     if (this.whole_sequence) {
                         // scan protein sequence and produce regions meeting the minimum mod score
                         for (var j = 0; j < this.whole_sequence.length; j++) {
@@ -401,14 +402,18 @@ At1g73450.1
                                     // pepResults contains the left index, right index, and mod score, and a list of nsSNP sites
                                     pepResults.push([leftIndex, j-1, currScore, snpList]);
                                     // reset snpList
-                                    snpList = (snpHere) ? [j] : [];
+                                    snpList = [];
                                     if (minMet) {
+                                        snpList.push(j);
                                         leftIndex = j;
+                                    } else {
+                                        inPep = false;
                                     }
                                 } else if (minMet) {
                                     if (snpHere) {
                                         snpList.push(j);
                                     }
+                                    inPep = true;
                                     leftIndex = j;
                                 }
                                 currScore = this.sequence[j].score;
@@ -417,7 +422,7 @@ At1g73450.1
                                     snpList.push(j);
                                 }
                                 pepResults.push([leftIndex, j, currScore, snpList]);
-                            } else if (snpHere) {
+                            } else if (snpHere && inPep) {
                                 snpList.push(j);
                             }
                         }
