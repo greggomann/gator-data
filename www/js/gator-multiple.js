@@ -3,6 +3,8 @@
 MASCP.BatchRead = function()
 {
     this._make_readers();
+    // confirmed_mods holds the experimentally-confirmed modifications
+    this.confirmed_mods = {};
 };
 
 MASCP.BatchRead.prototype._make_readers = function() {

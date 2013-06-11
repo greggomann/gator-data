@@ -232,7 +232,7 @@
 -->
 
 <div id="agi_input" class="rounded_box" style="">
-    <label class="inset" for="min_mod_score">Minimum Mod Score (0-100)
+    <label class="inset" for="min_mod_score">Minimum Mod Score (1-100)
         <input id="min_mod_score" type="text" name="min_mod_score" id="min_mod_score" value="50" />
         <input id="update_button" name="update_button" type="button" value="Update" />
     </label>
@@ -267,10 +267,8 @@ At1g73450.1
         <div id="status_field" style="font-style:italic"></div>
     </ul>
     <table id="results">
-        <tr><th>AGI</th><th>Peptide Sequence</th><th>Residue Indeces</th><th>Mod Score</th><th>nsSNP Sites</th></tr>
+        <tr><th>AGI</th><th>Peptide Sequence</th><th>Residue Indeces</th><th>Mod Score</th><th>nsSNP Sites<br>(Modification unlikely)</th><th>Confirmed Modifications</th></tr>
     </table>
-    <div id="tissue_results">
-    </div>
 </div>
 <script type="text/javascript">
 //<[CDATA[ 
@@ -342,7 +340,7 @@ At1g73450.1
         }
         var classthing = odd ? 'class="odd agirow"' : 'class="agirow"';
         odd = ! odd;
-        jQuery('#results').append('<tr id="'+agi_id+count.toString()+'"'+classthing+'><td><a id="'+agi_id+count.toString()+'link" target="_blank" href="./#'+agi+'">'+agi+'</a></td><td class="pep_sequence"></td><td class="pep_indeces"></td><td class="mod_score"></td><td class="snp"></td></tr>');
+        jQuery('#results').append('<tr id="'+agi_id+count.toString()+'"'+classthing+'><td><a id="'+agi_id+count.toString()+'link" target="_blank" href="./#'+agi+'">'+agi+'</a></td><td class="pep_sequence"></td><td class="pep_indeces"></td><td class="mod_score"></td><td class="snp"></td><td class="mods"></td></tr>');
         if (count != 0) {
             document.getElementById(agi_id+count.toString()+'link').style.display = 'none';
         }
@@ -361,7 +359,7 @@ At1g73450.1
         var agiCount = 0;
         var haveData = false;
         var minModScore = parseInt(jQuery('#min_mod_score').val());
-        if (minModScore < 0 || minModScore > 100) {
+        if (minModScore < 1 || minModScore > 100) {
             jQuery('#min_mod_score').val('50');
             minModScore = 50;
         }
@@ -392,6 +390,27 @@ At1g73450.1
                     var currScore = 0;
                     var errString = '';
                     var inPep = false;
+                    var modsInPeps = {};
+                    // getMods grabs confirmed modification sites within a specified index range
+                    var getMods = function(lft, rt) {
+                        var mods = [];
+                        for (m = 0; m < this.confirmed_mods.length; m++) {
+                            if (this.confirmed_mods[m][0] >= lft && this.confirmed_mods[m][0] <= rt) {
+                                var modAdded = false;
+                                for (var o = 0; o < mods.length; o++) {
+                                    if (this.confirmed_mods[m][0] == mods[o][0] && this.confirmed_mods[m][1] == mods[o][1]) {
+                                        modAdded = true;
+                                    }
+                                }
+                                if (!modAdded) {
+                                    mods.push(this.confirmed_mods[m]);
+                                    modsInPeps[m] = true;
+                                }
+                            }
+                        }
+                        mods.sort(function(a,b) { return a[0]-b[0]; });
+                        return mods;
+                    }
                     if (this.whole_sequence) {
                         // scan protein sequence and produce regions meeting the minimum mod score
                         for (var j = 0; j < this.whole_sequence.length; j++) {
@@ -401,11 +420,14 @@ At1g73450.1
                             if (this.sequence[j].score != currScore) {
                                 if (currScore >= minModScore) {
                                     // pepResults contains the left index, right index, and mod score, and a list of nsSNP sites
-                                    pepResults.push([leftIndex+1, j, currScore, snpList]);
+                                    pepResults.push([leftIndex, j-1, currScore, snpList, getMods.call(this,leftIndex,j)]);
                                     // reset snpList
                                     snpList = [];
                                     if (minMet) {
-                                        snpList.push(k);
+                                        if (snpHere) {
+                                            snpList.push(k);
+                                        }
+                                        inPep = true;
                                         leftIndex = j;
                                     } else {
                                         inPep = false;
@@ -422,28 +444,49 @@ At1g73450.1
                                 if (snpHere) {
                                     snpList.push(k);
                                 }
-                                pepResults.push([leftIndex+1, j+1, currScore, snpList]);
+                                pepResults.push([leftIndex, j, currScore, snpList, getMods.call(this,leftIndex,j)]);
                             } else if (snpHere && inPep) {
                                 snpList.push(k);
                             }
                         }
                     }
+                    
                     // now populate the table with retrieved results
-                    var seqData = '';
-                    var indexData = '';
-                    var modData = '';
+                    var lastIdx = 0;
                     for (var k in pepResults) {
-                        haveData = true;
                         var agiRow = agi_id + this.displayCount.toString();
+                        var modStr = '';
+                        if (pepResults[k][0] > lastIdx) {
+                            var gapMods = getMods.call(this,lastIdx,pepResults[k][0]-1);
+                            if (gapMods.length > 0) {
+                                add_agi_row(an_agi,this.displayCount);
+                                while(gapMods.length > 0) {
+                                    var newLoneMod = gapMods.shift();
+                                    modStr += '<br>'+this.whole_sequence.charAt(newLoneMod[0])+' '+(newLoneMod[0]+1)+': '+newLoneMod[1];
+                                }
+                                modStr = modStr.slice(4);
+                                jQuery('.mods', document.getElementById(agiRow)).html(modStr);
+                                modStr = '';
+                                this.displayCount++;
+                                agiRow = agi_id + this.displayCount.toString();
+                            }
+                        }
+                        lastIdx = pepResults[k][1]+1;
+                        haveData = true;
                         add_agi_row(an_agi,this.displayCount);
                         var seqLength = pepResults[k][1]-pepResults[k][0]+1;
                         var seqStr = (seqLength > 10) ? '...' : '';
                         var snpStr = pepResults[k][3].toString().replace(/,/g,'; ');
-
                         jQuery('.pep_sequence', document.getElementById(agiRow)).html(this.whole_sequence.slice(pepResults[k][0],pepResults[k][0]+Math.min(seqLength,10)) + seqStr);
-                        jQuery('.pep_indeces', document.getElementById(agiRow)).html(pepResults[k][0] + ' - ' + pepResults[k][1]);
+                        jQuery('.pep_indeces', document.getElementById(agiRow)).html((pepResults[k][0]+1) + ' - ' + (pepResults[k][1]+1));
                         jQuery('.mod_score', document.getElementById(agiRow)).html(pepResults[k][2]);
                         jQuery('.snp', document.getElementById(agiRow)).html(snpStr);
+                        // construct a string from the confirmed modification sites
+                        for (var n = 0; n < pepResults[k][4].length; n++) {
+                            modStr += '<br>'+this.whole_sequence.charAt(pepResults[k][4][n][0])+' '+(pepResults[k][4][n][0]+1)+': '+pepResults[k][4][n][1];
+                        }
+                        modStr = modStr.slice(4);
+                        jQuery('.mods', document.getElementById(agiRow)).html(modStr);
                         this.displayCount++;
                     }
 
