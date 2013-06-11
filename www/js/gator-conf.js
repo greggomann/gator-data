@@ -135,7 +135,7 @@ var READER_CONF = (function() {
                                     jQuery('#atchloro_experimental').show();
                                 }
                             },
-        'layers'        : ['atchloro']
+        'layers'        : ['atchloro_experimental']
     },
     MASCP.AtPeptideReader, {
         'definition'    : MASCP.AtPeptideReader,
@@ -196,7 +196,7 @@ var READER_CONF = (function() {
         'layers'        : ['ppdb'],
         'placeholder'   : true
     },
-	MASCP.ProteotypicReader, {
+/*	MASCP.ProteotypicReader, {
         'definition'    : MASCP.ProteotypicReader,
         'nicename'      : 'Predicted Peptides',
         'error_url'     : 'http://www.utoronto.ca/emililab/proteogest.htm',
@@ -210,6 +210,7 @@ var READER_CONF = (function() {
         'staticlink'    : true,
         'placeholder'   : true
     },
+*/
     MASCP.PubmedReader, {
         'definition'    : MASCP.PubmedReader,
         'nicename'      : 'Pubmed',
