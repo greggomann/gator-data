@@ -489,6 +489,21 @@ At1g73450.1
                         jQuery('.mods', document.getElementById(agiRow)).html(modStr);
                         this.displayCount++;
                     }
+                    if (lastIdx < this.whole_sequence.length-1) {
+                        var agiRow = agi_id + this.displayCount.toString();
+                        var modStr = '';
+                        var gapMods = getMods.call(this,lastIdx,this.whole_sequence.length-1);
+                        if (gapMods.length > 0) {
+                            add_agi_row(an_agi,this.displayCount);
+                            while(gapMods.length > 0) {
+                                var newLoneMod = gapMods.shift();
+                                modStr += '<br>'+this.whole_sequence.charAt(newLoneMod[0])+' '+(newLoneMod[0]+1)+': '+newLoneMod[1];
+                            }
+                            modStr = modStr.slice(4);
+                            jQuery('.mods', document.getElementById(agiRow)).html(modStr);
+                        }
+                    }
+
 
                     // increment the number of AGIs retrieved, check if we're done or if it's time for a callback to grab_agis
                     agiCount++;
