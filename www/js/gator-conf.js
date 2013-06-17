@@ -80,6 +80,18 @@ var READER_CONF = (function() {
                         },
         'layers'        : []
     },
+    MASCP.AtChloroReader, {
+        'definition'    : MASCP.AtChloroReader,
+        'nicename'      : 'AT_CHLORO',
+        'error_url'     : 'http://www.grenoble.prabi.fr/at_chloro/',
+        'success_url'   : 'http://www.grenoble.prabi.fr/at_chloro/?refagi=',
+        'result'        : function() {
+                                if (this.result.getPeptides().length > 0) {
+                                    jQuery('#atchloro_experimental').show();
+                                }
+                            },
+        'layers'        : ['atchloro_experimental']
+    },    
     MASCP.PromexReader, { 
         'definition'    : MASCP.PromexReader,
         'nicename'      : 'ProMEX',
@@ -124,18 +136,6 @@ var READER_CONF = (function() {
                           },
         'layers'        : ['gelmap_experimental'],
         'placeholder'   : true
-    },
-    MASCP.AtChloroReader, {
-        'definition'    : MASCP.AtChloroReader,
-        'nicename'      : 'AT_CHLORO',
-        'error_url'     : 'http://www.grenoble.prabi.fr/at_chloro/',
-        'success_url'   : 'http://www.grenoble.prabi.fr/at_chloro/?refagi=',
-        'result'        : function() {
-                                if (this.result.getPeptides().length > 0) {
-                                    jQuery('#atchloro_experimental').show();
-                                }
-                            },
-        'layers'        : ['atchloro_experimental']
     },
     MASCP.AtPeptideReader, {
         'definition'    : MASCP.AtPeptideReader,
@@ -279,7 +279,7 @@ var READER_CONF = (function() {
     },
     MASCP.GlycoModReader ,  {
         'definition'    :  MASCP.GlycoModReader,
-        'nicename'      : 'GlycoMod',
+        'nicename'      : 'Glycosylation',
         'error_url'     : 'http://www.ncbi.nlm.nih.gov/pubmed/22633491',
         'success_url'   : 'http://www.ncbi.nlm.nih.gov/pubmed/22633491',
         'result'        :  function() {
