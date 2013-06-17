@@ -129,16 +129,6 @@ var READER_CONF = (function() {
         'staticlink'    : true,
         'placeholder'   : true
     },
-    MASCP.GelMapReader, { 
-        'definition'    : MASCP.GelMapReader,
-        'nicename'      : 'GelMap',
-        'error_url'     : 'http://www.gelmap.de/',
-        'success_url'   : 'http://www.gelmap.de/',
-        'result'        : function() {
-                          },
-        'layers'        : ['gelmap_experimental'],
-        'placeholder'   : true
-    },
     MASCP.AtChloroReader, {
         'definition'    : MASCP.AtChloroReader,
         'nicename'      : 'AT_CHLORO',
@@ -150,6 +140,16 @@ var READER_CONF = (function() {
                                 }
                             },
         'layers'        : ['atchloro_experimental'],
+        'placeholder'   : true
+    },    
+    MASCP.GelMapReader, { 
+        'definition'    : MASCP.GelMapReader,
+        'nicename'      : 'GelMap',
+        'error_url'     : 'http://www.gelmap.de/',
+        'success_url'   : 'http://www.gelmap.de/',
+        'result'        : function() {
+                          },
+        'layers'        : ['gelmap_experimental'],
         'placeholder'   : true
     },
     MASCP.AtPeptideReader, {
