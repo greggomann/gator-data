@@ -115,6 +115,20 @@ var READER_CONF = (function() {
         'placeholder'   : true,
         'layers'        : ['arbitrary_datasets']
     },
+    MASCP.OrthologyReader, {
+        'definition'    : MASCP.OrthologyReader,
+        'nicename'      : 'Orthology',
+        'error_url'     : 'http://www.utoronto.ca/emililab/proteogest.htm',
+        'success_url'   : 'http://www.utoronto.ca/emililab/proteogest.htm',
+        'result'        : function() {
+                                if (this.result.getConservation().length > 0) {
+                                    jQuery('#orthology_placeholder').show();
+                                }
+                            },
+        'layers'        : ['orthology_experimental'],
+        'staticlink'    : true,
+        'placeholder'   : true
+    },    
 	MASCP.ProteotypicReader, {
         'definition'    : MASCP.ProteotypicReader,
         'nicename'      : 'Predicted Peptides',
