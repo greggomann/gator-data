@@ -297,13 +297,14 @@ At1g73450.1
     
     var updateOrganKey = function(key,val,agi_id) {
         var res_index = updateOrganTable(key);
-        var organs = jQuery('.organ', document.getElementById(agi_id));
+        var organs = jQuery('.organ', document.getElementById(agi_id.toLowerCase()));
         var diff =  (jQuery('#organs').find('th').length - 1) - organs.length;
+        console.log(organs.length);
         while (diff > 0) {
             diff -= 1;
-            jQuery(document.getElementById(agi_id)).append('<td class="organ"></td>');
+            jQuery(document.getElementById(agi_id.toLowerCase())).append('<td class="organ"></td>');
         }
-        organs = jQuery('.organ', document.getElementById(agi_id));
+        organs = jQuery('.organ', document.getElementById(agi_id.toLowerCase()));
         document.getElementById('organ_span').setAttribute('colspan',organs.length);
 
         if ( ! key ) {
@@ -406,8 +407,7 @@ At1g73450.1
         var reader = this;
         var result = this.result;
         var agi_id = reader.agi.replace(/\./, '|');
-        jQuery('.modification', document.getElementById(agi_id)).text(result.getAllExperimentalPositions().sort().join(','));
-        
+        jQuery('.modification', document.getElementById(agi_id.toLowerCase())).text(result.getAllExperimentalPositions().sort().join(','));
 
         var tissues = this.result.getSpectra();
         for (var loc_key in tissues) {
@@ -423,9 +423,9 @@ At1g73450.1
         var result = this.result;
         var agi_id = reader.agi.replace(/\./, '|');
         var ms_wta = result.getWinnerTakesAllMassSpec();
-        if (ms_wta.length > 0) jQuery('.loc_ms', document.getElementById(agi_id)).text(ms_wta.join(',')+' ('+ms_wta._values[0]+')');
+        if (ms_wta.length > 0) jQuery('.loc_ms', document.getElementById(agi_id.toLowerCase())).text(ms_wta.join(',')+' ('+ms_wta._values[0]+')');
         var gfp_wta = result.getWinnerTakesAllGfp();
-        if (gfp_wta.length > 0) jQuery('.loc_gfp', document.getElementById(agi_id)).text(gfp_wta.join(',')+' ('+gfp_wta._values[0]+')');
+        if (gfp_wta.length > 0) jQuery('.loc_gfp', document.getElementById(agi_id.toLowerCase())).text(gfp_wta.join(',')+' ('+gfp_wta._values[0]+')');
     });
 
     mr.bind('resultReceived',MASCP.AtProteomeReader, function() {
