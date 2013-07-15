@@ -118,8 +118,8 @@ var READER_CONF = (function() {
     MASCP.OrthologyReader, {
         'definition'    : MASCP.OrthologyReader,
         'nicename'      : 'Orthology',
-        'error_url'     : 'http://www.utoronto.ca/emililab/proteogest.htm',
-        'success_url'   : 'http://www.utoronto.ca/emililab/proteogest.htm',
+        'error_url'     : '',
+        'success_url'   : '',
         'result'        : function() {
                                 if (this.result.getConservation().length > 0) {
                                     jQuery('#orthology_placeholder').show();
