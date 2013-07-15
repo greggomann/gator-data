@@ -188,7 +188,7 @@
                 }
             });
         }
-                
+
         jQuery('#agi').trigger('change',[true]);
     });
 
@@ -238,6 +238,19 @@
             }
             jQuery('#description').text(this.result.getDescription());
             MASCP.renderer.setSequence(this.result.getSequence());
+
+            // Look for a search string in the url containing keyword 'highlight'
+            // upload.html uses this to highlight modified/unmodified regions
+            var searchString = window.location.search.replace('?', '');
+            if (searchString && searchString.indexOf('highlight=') >= 0) {
+                var highlightVals = searchString.split('=')[1].split(',');
+                var evenTest = highlightVals.length / 2;
+                if (evenTest != parseInt(evenTest)) {
+                    console.log('error: odd number of highlight indeces');
+                } else {
+                    MASCP.renderer.moveHighlight.apply(MASCP.renderer,highlightVals);
+                }
+            }
         });
         reader.bind('error',function(err) {
             document._screen.hide();            
