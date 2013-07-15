@@ -390,7 +390,7 @@
         }
         var classthing = odd ? 'class="odd agirow"' : 'class="agirow"';
         odd = ! odd;
-        jQuery('#results').append('<tr id="'+agi_id+count.toString()+'"'+classthing+'><td><a id="'+agi_id+count.toString()+'link" target="_blank" href="./#'+agi+'">'+agi+'</a></td><td class="mods_activated"></td><td class="mods_deactivated"></td></tr>');
+        jQuery('#results').append('<tr id="'+agi_id+count.toString()+'"'+classthing+'><td class="anchor"></td><td class="mods_activated"></td><td class="mods_deactivated"></td></tr>');
         if (count != 0) {
             document.getElementById(agi_id+count.toString()+'link').style.display = 'none';
         }
@@ -534,12 +534,25 @@
                     }
                 }
             }
-            add_agi_row(thisAgi, 0);
-            var agiRow = thisAgi.replace(/\./, '|').toLowerCase() + '0';
 
             // Build strings of activated and deactivated modification sites
             var deactString = build_string(incResidues);
             var actString = build_string(decResidues);
+
+            add_agi_row(thisAgi, 0);
+            var newAgiAnchor = document.createElement('a');
+            var searchString = '';
+            // If we have results, build search string for anchor href
+            if (decResidues.length > 0 || incResidues.length > 0) {
+                var sepString = (incResidues.length > 0 && decResidues.length > 0) ? ',' : '';
+                searchString = '?highlight=' + deactString.replace(/,\s/g,',').replace(/-/g,',') + sepString + actString.replace(/,\s/g,',').replace(/-/g,',');
+            }
+            newAgiAnchor.href = 'index.html' + searchString + '#' + thisAgi;
+            newAgiAnchor.target = '_blank';
+            newAgiAnchor.innerHTML = thisAgi;
+
+            var agiRow = thisAgi.replace(/\./, '|').toLowerCase() + '0';
+            jQuery('.anchor', document.getElementById(agiRow)).append(newAgiAnchor);
 
             jQuery('.mods_deactivated', document.getElementById(agiRow)).html(deactString);
             jQuery('.mods_activated', document.getElementById(agiRow)).html(actString);
@@ -571,6 +584,7 @@
             }
             if (!agiObjOne || !agiObjTwo) {
                 console.log('error: only one input object found');
+                    console.log(MASCP.renderer);
                 return;
             }
             // normalize the coverage counts for the modhunter
