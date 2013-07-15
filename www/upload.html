@@ -1,0 +1,1024 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    
+    <title>Modhunter - Data Upload</title>
+
+    <link rel="stylesheet" type="text/css" href="css/no-theme/jquery-ui-1.7.2.custom.css"/>
+    <script type="text/javascript">
+    window.svgns = 'http://www.w3.org/2000/svg';
+    </script>
+    
+    <script type="text/javascript" src="js/mascp-jstools.min.js"></script>
+    <script type="text/javascript">
+      // We should try to load data from the local server.
+      MASCP.LOCALSERVER = true;
+    </script>
+    
+    <script type="text/javascript" charset="utf-8" src="http://code.jquery.com/jquery-1.4.1.js"></script>
+
+    <script type="text/javascript" src="js/jquery-ui-1.7.2.min.js"></script>
+    <!-- <script type="text/javascript" src="js/jquery.masonry.min.js"></script> -->
+
+    <script type="text/javascript" src="js/gator-conf.js"></script>
+    <script type="text/javascript" src="js/gator-upload.js"></script>
+    <!--
+    <script type="text/javascript" src="js/filetojson.js"></script> -->
+    
+
+    <script type="text/javascript">
+    /*
+    *jQuery table2csv plugin 0.1.0
+    *Converts table html element to csv string
+    *Copyright (c) 2009 Leonardo Rossetti motw.leo@gmail.com
+    * Licensed under the MIT license (http://www.opensource.org/licenses/mit-license.php)
+    *THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    *IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    *FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    *AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    *LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+    *OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+    *THE SOFTWARE.
+    */
+    //keeps closure
+        var table2CSV = function (options) {
+            var defaults = {
+                delimiter: ",",
+                callback: function (csv) {
+                    return csv;
+                }
+            };
+            var settings = jQuery.extend(defaults, options);
+
+            return (function () {
+                var csv = "";
+                //gets th to set column headers
+                jQuery(this).find("thead tr th").each(function() {
+                    csv += "\"" + jQuery(this).text().replace(/(\")/gim, "\\\"\\\"") + "\"" + settings.delimiter; 
+                });
+                csv += "\n";
+                //each td as a csv column
+                jQuery(this).find("tbody tr").each(function () {
+                    jQuery(this).find("td").each(function () {
+                        csv += "\"" + jQuery(this).text().replace(/(\")/gim, "\\\"\\\"") + "\"" + settings.delimiter;
+                    });
+                    csv += "\n";
+                });
+                //callback function containing csv string as parameter
+                settings.callback(csv);
+                return csv;
+            }).call(this);
+        };
+    </script>
+
+    <style type="text/css">
+
+        .screen {
+            background:#000000 none repeat scroll 0 0;
+            display:none;
+            height:100%;
+            left:0;
+            filter:alpha(opacity=80);
+            opacity: 0.8;
+            top:0;
+            width:100%;
+            z-index:50;
+            display:none;
+            position:fixed;
+        }
+
+
+        html {
+            min-width: 800px;
+            height: 100%;
+        }
+
+        body {
+            font-family: Verdana, Helvetica, Arial, sans-serif;
+            font-size: 10px;
+            height: 100%;
+        }
+        h1 span {
+            display: block;
+            position: absolute;
+            top: 0px;
+            left: 0px;
+        }
+        
+        h3 {
+            font-size: 32px;
+        }
+
+
+        .rounded_box {
+            background: #eeeeee;
+            -moz-border-radius: 5px;
+            border-radius: 5px;
+            padding-right: 5px;
+            padding-bottom: 5px;
+        }
+
+        .rounded_box * {
+            margin-left: 5px;
+        }
+
+
+        .rounded_box .inset {
+            -moz-border-radius: 5px 0px 5px 0px;
+            border-bottom-right-radius: 5px;
+            border-top-left-radius: 5px;
+            padding: 5px;
+            background: #888888;
+            color: #eeeeee;
+            margin: 0px;
+            overflow: hidden;
+            display: block;
+            width: 170px;
+        }
+
+        #agi_display {
+            overflow: auto;
+        }
+        #file_input_div {
+            position: absolute;
+            top: 10px;
+            bottom: 110px;
+            width: 260px;
+            height: 195px;
+        }
+
+        #files {
+            position: absolute;
+            width: 200px;
+            top: 55px;
+            bottom: 0px;
+            margin-bottom: 30px;
+        }
+        #agi {
+            position: absolute;
+            top: 10px;
+            bottom: 30px;
+            height: 100%;
+            width: 160px;
+            resize: none;
+        }
+        
+        #agi_edit, #agi_display {
+            position: absolute;
+            top: 0px;
+            left: 0px;
+            width: 100%;
+            height: 100%;
+        }
+        #help_container {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            width: 200px;
+            height: 80px;
+        }
+        #results th {
+            background: rgb(100,100,100);
+            color: rgb(255,255,255);
+            padding: 2px;
+        }
+        #results tr {
+            background: rgb(240,240,240);
+        }
+        #results tr.odd {
+            background: rgb(230,230,230);
+        }
+        #sensitivity {
+            width: 25px;
+        }
+
+        span.fatal, span.errors, span.success {
+            width: 10px;
+            padding-right: 10px;
+            height: 10px;            
+        }
+        
+        span.fatal {
+            background: rgb(255,0,0);
+        }
+        
+        span.errors {
+            background: rgb(250,150,20);            
+        }
+
+        span.success {
+            background: rgb(0,255,0);            
+        }
+        
+    </style>
+</head>
+
+<body>
+<!--
+<div style="position: absolute; top: 10px; left: 10px; width: 25%; display: none;">
+    <h1 style="position: absolute; left: 0px; top: 0px; margin: 0px; width: 100%; font-size: 10px; "><span>MASCP AggreGATOR</span><img style="height: 50px; top: 50%; left: -7px; position: absolute;" src="gator.png" /></h1>
+</div>
+<a style="display: block; position: absolute; top: 10px; left: 10px; width: 90px; height: 68px; background-image: url(http://www.masc-proteomics.org/mascp/skins/common/images/mascp_logo.png);" href="http://www.masc-proteomics.org/" title="MASC Proteomics portal"></a>
+-->
+
+<div id="file_input_div" class="rounded_box" style="">
+    <div class="inset" for="min_mod_score">
+        <input id="mode_select_1" type="radio" name="mode_select" checked /><label for="mode_select_1">Single dataset</label>
+        <br>
+        <input id="mode_select_2" type="radio" name="mode_select" /><label for="mode_select_2">Two dataset comparison</label>
+    </div>
+    <div id="files">
+        <label for="sensitivity" style="font-size:12px">Sensitivity (0-100):</label>
+        <input type="text" name="sensitivity" id="sensitivity" value="50" />
+        <br><br>
+        <label for="file_input_1" id="file_input_1_label"></label><input type="file" id="file_input_1" name="file_input_1" />
+        <div id="filename_1"></div>
+        <label for="file_input_2" id="file_input_2_label"></label><input type="file" id="file_input_2" name="file_input_2" />
+        <div id="filename_2"></div>
+        <br>
+        <div><input type="button" id="load_button" value="Load files" /></div>
+    </div>
+</div>
+
+<div id="help_container" class="rounded_box">
+    <div class="inset">Help</div>
+    <div id="help">
+        <p>
+            <a href="http://www.masc-proteomics.org/mascp/index.php/Gator">Help</a>
+        </p>
+        <p>
+            <a href="http://gator.masc-proteomics.org/source">Source</a>
+        </p>
+    </div>
+</div>
+
+<div style="margin-left: 280px;">
+    <button id="save">Save as CSV</button>
+    <ul style="font-size:16px">
+        <div style="font-weight:bold">Possible modification regions:</div>
+        <div id="status_field" style="font-style:italic"></div>
+    </ul>
+    <table id="results">
+        <tr><th>AGI</th><th>Modifications Activated</th><th>Modifications Deactivated</th></tr>
+    </table>
+</div>
+<script type="text/javascript">
+//<[CDATA[ 
+    window.onload = null;
+
+    var mr = new MASCP.BatchRead();
+    var mh = new MASCP.Modhunter();
+    var odd = false;
+
+    // show the splash screen for users with insufficient feature support
+    var showIESplash = function() {
+        var splash = document.getElementById('ie_splash');
+        splash.style.display = 'block';
+        
+        splash.hideForever = function() {
+            var date = new Date();
+            date.setTime(date.getTime()+(365*24*60*60*1000));
+            var expires = "; expires="+date.toGMTString();
+            document.cookie = 'iesplash=true'+expires+'; path=/';
+            splash.style.display = 'none';
+        };
+        
+        splash.hide = function() {
+            splash.style.display = 'none';
+        };
+        
+    };
+    
+    var table2CSV = function (options) {
+        var defaults = {
+            delimiter: ",",
+            callback: function (csv) {
+                return csv;
+            }
+        };
+        var settings = jQuery.extend(defaults, options);
+
+        return (function () {
+            var csv = "";
+            //gets th to set column headers
+            jQuery(this).find("thead tr th").each(function() {
+                csv += "\"" + jQuery(this).text().replace(/(\")/gim, "\\\"\\\"") + "\"" + settings.delimiter; 
+            });
+            csv += "\n";
+            //each td as a csv column
+            jQuery(this).find("tbody tr").each(function () {
+                jQuery(this).find("td").each(function () {
+                    csv += "\"" + jQuery(this).text().replace(/(\")/gim, "\\\"\\\"") + "\"" + settings.delimiter;
+                });
+                csv += "\n";
+            });
+            //callback function containing csv string as parameter
+            settings.callback(csv);
+            return csv;
+        }).call(this);
+    };
+
+    // open new window with CSV data
+    var save = function() {
+        var generator = window.open('', 'csv', 'height=400,width=600'); 
+          generator.document.write('<html><head><title>CSV Output</title>'); 
+          generator.document.write('</head><body >'); 
+          generator.document.write('<textArea cols=70 rows=15 wrap="off" >'); 
+          generator.document.write(table2CSV.call(jQuery('#results'),({delivery:'value'}))); 
+          generator.document.write('</textArea>'); 
+          generator.document.write('</body></html>'); 
+          generator.document.close();
+          return true;
+    };
+
+    // convert csv file contents to an object literal
+    var csv_to_obj = function(txtData) {
+        var lineBreaks = ['\r\n', '\r', '\n'];
+        var lineBreak = '';
+        for (var i = 0; i < lineBreaks.length; i++) {
+            if (txtData.indexOf(lineBreaks[i]) >= 0) {
+                lineBreak = lineBreaks[i];
+                break;
+            }
+        }
+        var lineArray = txtData.split(lineBreak);
+        var delims = ['\t', ',', ';', ' '];
+        var delim = '';
+        var resultObj = {};
+
+        for (var i = 0; i < delims.length; i++) {
+            if (lineArray[0].indexOf(delims[i]) >= 0) {
+                delim = delims[i];
+                break;
+            }
+        }
+        if (delim == '') {
+            alert('Please select CSV files delimited with tabs, commas, semicolons, or spaces. See help for more formatting information.');
+            return;
+        }
+        for (var i = 0; i < lineArray.length; i++) {
+            var entry = lineArray[i].split(delim);
+            if (entry.length >= 2) {
+                var entryAgi = entry[0].replace('"','').toUpperCase();
+                var entryPep = entry[1].replace('"','').toUpperCase();
+                if (entryAgi in resultObj) {
+                    if (entryPep in resultObj[entryAgi]) {
+                        resultObj[entryAgi][entryPep]++;
+                    } else {
+                        resultObj[entryAgi][entryPep] = 1;
+                    }
+                } else {
+                    resultObj[entryAgi] = {};
+                    resultObj[entryAgi][entryPep] = 1;
+                }
+            } else {
+                console.log('error: less than two elements in input line');
+            }
+        }
+        return resultObj;
+    };
+
+    // Add a new row to output table for @agi, while @count indicates the number of rows for this AGI
+    function add_agi_row(agi,count) {
+        var agi_id = agi.replace(/\./, '|').toLowerCase();
+        if (document.getElementById(agi_id)) {
+            return;
+        }
+        var classthing = odd ? 'class="odd agirow"' : 'class="agirow"';
+        odd = ! odd;
+        jQuery('#results').append('<tr id="'+agi_id+count.toString()+'"'+classthing+'><td><a id="'+agi_id+count.toString()+'link" target="_blank" href="./#'+agi+'">'+agi+'</a></td><td class="mods_activated"></td><td class="mods_deactivated"></td></tr>');
+        if (count != 0) {
+            document.getElementById(agi_id+count.toString()+'link').style.display = 'none';
+        }
+    }
+
+    // normalize gator_coverage counts in a modHunter object so they sum to one
+    var norm_modhunter = function(modHunter) {
+        var totCoverage = 0;
+        for (var i = 0; i < modHunter.whole_sequence.length; i++) {
+            totCoverage += modHunter.sequence[i].gator_coverage;
+        }
+        for (var j = 0; j < modHunter.whole_sequence.length; j++) {
+            modHunter.sequence[j].gator_coverage_norm = modHunter.sequence[j].gator_coverage / totCoverage;
+        }
+        return;
+    };
+
+    // normalize coverage counts for a particular AGI in the uploaded data
+    // modHunter object is passed to provide protein sequence
+    // returns the string 'success' or 'failure'
+    var calc_coverage = function(dataObj, modHunter) {
+        var agi = modHunter.agi;
+        var foundAgi = false;
+        var totCov = 0;
+        for (var filename in dataObj) {
+            if (dataObj.hasOwnProperty(filename)) {
+                if (dataObj[filename].hasOwnProperty(agi)) {
+                    var agiObj = dataObj[filename][agi];
+                    var seqLength = modHunter.whole_sequence.length;
+                    // if this agi hasn't been initialized with a sequence object, do so now
+                    if (!agiObj.sequence) {
+                        agiObj.sequence = {};
+                        for (var j = 0; j < seqLength; j++) {
+                            agiObj.sequence[j] = {};
+                            agiObj.sequence[j].gator_coverage = 0;
+                        }
+                    }
+                    // iterate through peptides in file object and count coverage
+                    for (var peptide in agiObj) {
+                        if (agiObj.hasOwnProperty(peptide) && peptide != 'sequence') {
+                            var leftIdx = modHunter.whole_sequence.indexOf(peptide);
+                            for (var i = leftIdx; i < leftIdx+peptide.length; i++) {
+                                agiObj.sequence[i].gator_coverage += agiObj[peptide];
+                            }
+                        }
+                    }
+                    if (!foundAgi) {
+                        // now normalize these counts
+                        for (var k = 0; k < seqLength; k++) {
+                            totCov += agiObj.sequence[k].gator_coverage;
+                        }
+                    }
+                    for (var i = 0; i < seqLength; i++) {
+                        agiObj.sequence[i].gator_coverage_norm = agiObj.sequence[i].gator_coverage / totCov;
+                    }
+                    foundAgi = true;
+                }
+            }
+        }
+        if (foundAgi) {
+            return 'success';
+        } else {
+            return 'failure';
+        }
+    }
+
+    // scale the coverage counts from input files and modhunter object to minimize difference
+    // returns scaling value
+    var scale_coverage = function(dataObj, modHunter) {
+        for (var filename in dataObj) {
+            if (dataObj.hasOwnProperty(filename) && dataObj[filename][modHunter.agi]) {
+                var scaleVar;
+                var deltaTotal;
+                var bestTotal = -1;
+                for (var i = 0; i < modHunter.whole_sequence.length; i++) {
+                    var newScale = modHunter.sequence[i].gator_coverage_norm / dataObj[filename][modHunter.agi].sequence[i].gator_coverage_norm;
+                    deltaTotal = 0;
+                    for (var j = 0; j < modHunter.whole_sequence.length; j++) {
+                        if (j != i && dataObj[filename][modHunter.agi].sequence[j].gator_coverage_norm > 0) {
+                            var deltaCov = Math.abs((dataObj[filename][modHunter.agi].sequence[j].gator_coverage_norm * newScale) - modHunter.sequence[j].gator_coverage_norm);
+                            deltaTotal += deltaCov;
+                        }
+                    }
+                    if (deltaTotal < bestTotal || bestTotal < 0) {
+                        scaleVar = newScale;
+                        bestTotal = deltaTotal;
+                    }
+                }
+                return scaleVar;
+            }
+        }
+    };
+
+    // Function to build a display-worthy string of residue indeces based on a list
+    var build_string = function(inList) {
+        var resultString = ''
+        var k = 0;
+        while (k < inList.length) {
+            currEntry = ''+inList[k];
+            var p = 1;
+            while (inList[k+p] && inList[k+p] == (inList[k]+p)) {
+                p++;
+            }
+            if (p > 1) {
+                currEntry += '-'+inList[k+p-1];
+            }
+            resultString += (((resultString != '') ? ', ' : '') + currEntry);
+            k += p;
+        }
+        return resultString;
+    };
+
+    // fill display with results in single file mode
+    var display_single = function(modHunter, dataObj) {
+        var seqLength = modHunter.whole_sequence.length;
+        var thisAgi = modHunter.agi;
+        // incResidues and decResidues contain the residue indeces that satisfy the entered sensitivity
+        var incResidues = [];
+        var decResidues = [];
+        // calculate gator_coverage for the uploaded data
+        if (calc_coverage(dataObj, modHunter) == 'success') {
+            // find the object for this AGI and put it in agiObj
+            for (var filename in dataObj) {
+                if (dataObj.hasOwnProperty(filename)) {
+                    var agiObj = dataObj[filename][thisAgi];
+                    break;
+                }
+            }
+            // normalize the coverage counts for the modhunter
+            norm_modhunter(modHunter);
+
+            // look for significant changes in coverage
+            var scaleVar = scale_coverage(dataObj, modHunter);
+            for (var i = 0; i < seqLength; i++) {
+                var deltaCov = modHunter.sequence[i].gator_coverage_norm - (agiObj.sequence[i].gator_coverage_norm * scaleVar);
+                if (Math.abs(deltaCov) > ((window._sensitivity/100)/seqLength) && agiObj.sequence[i].gator_coverage_norm != 0) {
+                    if (deltaCov > 0) {
+                        decResidues.push(i);
+                    } else {
+                        incResidues.push(i);
+                    }
+                }
+            }
+            add_agi_row(thisAgi, 0);
+            var agiRow = thisAgi.replace(/\./, '|').toLowerCase() + '0';
+
+            // Build strings of activated and deactivated modification sites
+            var deactString = build_string(incResidues);
+            var actString = build_string(decResidues);
+
+            jQuery('.mods_deactivated', document.getElementById(agiRow)).html(deactString);
+            jQuery('.mods_activated', document.getElementById(agiRow)).html(actString);
+        } else {
+            console.log('Error: modhunter agi not found in file data');
+        }
+    };
+
+    // fill display with results in double file mode
+    var display_double = function(modHunter, dataObj) {
+        var seqLength = modHunter.whole_sequence.length;
+        var thisAgi = modHunter.agi;
+        // incResidues and decResidues contain the residue indeces that satisfy the entered sensitivity
+        var incResidues = [];
+        var decResidues = [];
+        // calculate gator_coverage for the uploaded data
+        if (calc_coverage(dataObj, modHunter) == 'success') {
+            // find the object for this AGI and put it in agiObj
+            var agiObjOne = null;
+            var agiObjTwo;
+            for (var filename in dataObj) {
+                if (dataObj.hasOwnProperty(filename)) {
+                    if (agiObjOne) {
+                        agiObjTwo = dataObj[filename][thisAgi];
+                    } else {
+                        agiObjOne = dataObj[filename][thisAgi];
+                    }
+                }
+            }
+            if (!agiObjOne || !agiObjTwo) {
+                console.log('error: only one input object found');
+                return;
+            }
+            // normalize the coverage counts for the modhunter
+            norm_modhunter(modHunter);
+
+            // look for significant changes in coverage
+            var scaleVar = scale_coverage(dataObj, modHunter);
+            for (var i = 0; i < seqLength; i++) {
+                var deltaCov = modHunter.sequence[i].gator_coverage_norm - (agiObj.sequence[i].gator_coverage_norm * scaleVar);
+                if (Math.abs(deltaCov) > ((window._sensitivity/100)/seqLength) && agiObj.sequence[i].gator_coverage_norm != 0) {
+                    if (deltaCov > 0) {
+                        decResidues.push(i);
+                    } else {
+                        incResidues.push(i);
+                    }
+                }
+            }
+            add_agi_row(thisAgi, 0);
+            var agiRow = thisAgi.replace(/\./, '|').toLowerCase() + '0';
+
+            // Build strings of activated and deactivated modification sites
+            var deactString = build_string(incResidues);
+            var actString = build_string(decResidues);
+
+            jQuery('.mods_deactivated', document.getElementById(agiRow)).html(deactString);
+            jQuery('.mods_activated', document.getElementById(agiRow)).html(actString);
+        } else {
+            console.log('Error: modhunter agi not found in file data');
+        }    
+    };
+
+    // after data has been uploaded, grab Gator data for appropriate AGIs and display results
+    function rebuild_agi_display(inputObj, mode) {
+        jQuery('#status_field').text('Loading...');
+        jQuery('#results tr.agirow').each(function(i) {
+            this.parentNode.removeChild(this);
+        });
+
+        // vals is an array containing AGIs to be queried; populate it now
+        var vals = [];
+        if (mode == 'single') {
+            for (var file in inputObj) {
+                if (inputObj.hasOwnProperty(file)) {
+                    for (var agi in inputObj[file]) {
+                        if (inputObj[file].hasOwnProperty(agi)) {
+                            vals.push(agi);
+                        }
+                    }
+                }
+            }
+        } else if (mode == 'double') {
+            for (var file in inputObj) {
+                if (inputObj.hasOwnProperty(file)) {
+                    for (var agi in inputObj[file]) {
+                        if (inputObj[file].hasOwnProperty(agi)) {
+                            var isHere = false;
+                            for (var i = 0; i < vals.length; i++) {
+                                if (vals[i] == agi) { isHere = true; }
+                            }
+                            if (!isHere) { vals.push(agi); }
+                        }
+                    }
+                }
+            }
+        }
+
+        // mh is an object literal containing our modhunter objects for this collection of AGIs
+        mh = {};
+        var agiTotal = vals.length;
+        var max_val = (vals.length > 50) ? 50 : vals.length;
+        var agiCount = 0;
+        var haveData = false;
+        var minModScore = parseInt(jQuery('#min_mod_score').val());
+        if (minModScore < 1 || minModScore > 100) {
+            jQuery('#min_mod_score').val('50');
+            minModScore = 50;
+        }
+        
+        // grab_agis collects data for the AGIs given in @batch_vals, bound to agiComplete event if over 50 AGIs in @vals
+        function grab_agis(batch_vals) {
+            for (var i = 0; i < batch_vals.length; i++ ) {
+                (function() {
+                if (batch_vals[i].replace(/\s*/g,'') == '') {
+                    return;
+                }
+                var new_els = jQuery('<div><span>'+batch_vals[i]+'</span><span class="status">Loading..</span><span class="messages"></span></div>')[0];
+                new_els.status = jQuery('.status', new_els);
+                new_els.agi = batch_vals[i];
+                var agi_id = batch_vals[i].replace(/\./, '|').toLowerCase();
+                var j = 1;
+                var an_agi = new_els.agi;
+                var error_count = 0;
+
+                var newModhunter = new MASCP.Modhunter();
+                newModhunter.displayCount = 0;
+                // tell the modHunter which agi it's being used for
+                newModhunter.agi = batch_vals[i].toUpperCase();
+
+                // update the status text field and check if we need to fire another batch read process
+                var update_status = function() {
+                    agiCount++;
+                    jQuery('#status_field').text(jQuery('#status_field').text().slice(0,11)+' '+agiCount.toString()+' / '+agiTotal.toString());
+                    if (agiCount == agiTotal) {
+                        jQuery('#status_field').text('');
+                        if (haveData == false) {
+                            // jQuery('#status_field').text('No results found.');
+                        }
+                    } else if (agiCount % 50 == 0) {
+                        var batchSize = (agiTotal - agiCount > 50) ? 50 : agiTotal - agiCount;
+                        grab_agis(vals.slice(agiCount, agiCount + batchSize));
+                    }
+                };
+
+                // fire this when all modification data has been produced for the AGI associated with this modhunter object
+                newModhunter.bind('agiComplete', (function() {
+                    if (mode == 'single') {
+                        return function(e) {
+                            display_single(this, inputObj);
+                            update_status();
+                        };
+                    } else if (mode == 'double') {
+                        return function(e) {
+                            display_double(this, inputObj);
+                            update_status();
+                        };
+                    }
+                })());
+                /*
+                    var pepResults = [];
+                    var snpList = [];
+                    var leftIndex = 0;
+                    var currScore = 0;
+                    var errString = '';
+                    var inPep = false;
+                    var modsInPeps = {};
+                    // getMods grabs confirmed modification sites within a specified index range
+                    var getMods = function(lft, rt) {
+                        var mods = [];
+                        for (m = 0; m < this.confirmed_mods.length; m++) {
+                            if (this.confirmed_mods[m][0] >= lft && this.confirmed_mods[m][0] <= rt) {
+                                var modAdded = false;
+                                for (var o = 0; o < mods.length; o++) {
+                                    if (this.confirmed_mods[m][0] == mods[o][0] && this.confirmed_mods[m][1] == mods[o][1]) {
+                                        modAdded = true;
+                                    }
+                                }
+                                if (!modAdded) {
+                                    mods.push(this.confirmed_mods[m]);
+                                    modsInPeps[m] = true;
+                                }
+                            }
+                        }
+                        mods.sort(function(a,b) { return a[0]-b[0]; });
+                        return mods;
+                    }
+                    if (this.whole_sequence) {
+                        // scan protein sequence and produce regions meeting the minimum mod score
+                        for (var j = 0; j < this.whole_sequence.length; j++) {
+                            var k = j+1;
+                            var minMet = (this.sequence[j].score >= minModScore);
+                            var snpHere = (this.sequence[j].snp_coverage > 0);
+                            if (this.sequence[j].score != currScore) {
+                                if (currScore >= minModScore) {
+                                    // pepResults contains the left index, right index, and mod score, and a list of nsSNP sites
+                                    pepResults.push([leftIndex, j-1, currScore, snpList, getMods.call(this,leftIndex,j)]);
+                                    // reset snpList
+                                    snpList = [];
+                                    if (minMet) {
+                                        if (snpHere) {
+                                            snpList.push(k);
+                                        }
+                                        inPep = true;
+                                        leftIndex = j;
+                                    } else {
+                                        inPep = false;
+                                    }
+                                } else if (minMet) {
+                                    if (snpHere) {
+                                        snpList.push(k);
+                                    }
+                                    inPep = true;
+                                    leftIndex = j;
+                                }
+                                currScore = this.sequence[j].score;
+                            } else if (j == this.whole_sequence.length-1 && currScore >= minModScore) {
+                                if (snpHere) {
+                                    snpList.push(k);
+                                }
+                                pepResults.push([leftIndex, j, currScore, snpList, getMods.call(this,leftIndex,j)]);
+                            } else if (snpHere && inPep) {
+                                snpList.push(k);
+                            }
+                        }
+                    }
+                    
+                    // now populate the table with retrieved results
+                    var lastIdx = 0;
+                    for (var k in pepResults) {
+                        var agiRow = agi_id + this.displayCount.toString();
+                        var modStr = '';
+                        if (pepResults[k][0] > lastIdx) {
+                            var gapMods = getMods.call(this,lastIdx,pepResults[k][0]-1);
+                            if (gapMods.length > 0) {
+                                add_agi_row(an_agi,this.displayCount);
+                                while(gapMods.length > 0) {
+                                    var newLoneMod = gapMods.shift();
+                                    modStr += '<br>'+this.whole_sequence.charAt(newLoneMod[0])+' '+(newLoneMod[0]+1)+': '+newLoneMod[1];
+                                }
+                                modStr = modStr.slice(4);
+                                jQuery('.mods', document.getElementById(agiRow)).html(modStr);
+                                modStr = '';
+                                this.displayCount++;
+                                agiRow = agi_id + this.displayCount.toString();
+                            }
+                        }
+                        lastIdx = pepResults[k][1]+1;
+                        haveData = true;
+                        add_agi_row(an_agi,this.displayCount);
+                        var seqLength = pepResults[k][1]-pepResults[k][0]+1;
+                        var seqStr = (seqLength > 10) ? '...' : '';
+                        var snpStr = pepResults[k][3].toString().replace(/,/g,'; ');
+                        jQuery('.pep_sequence', document.getElementById(agiRow)).html(this.whole_sequence.slice(pepResults[k][0],pepResults[k][0]+Math.min(seqLength,10)) + seqStr);
+                        jQuery('.pep_indeces', document.getElementById(agiRow)).html((pepResults[k][0]+1) + ' - ' + (pepResults[k][1]+1));
+                        jQuery('.mod_score', document.getElementById(agiRow)).html(pepResults[k][2]);
+                        jQuery('.snp', document.getElementById(agiRow)).html(snpStr);
+                        // construct a string from the confirmed modification sites
+                        for (var n = 0; n < pepResults[k][4].length; n++) {
+                            modStr += '<br>'+this.whole_sequence.charAt(pepResults[k][4][n][0])+' '+(pepResults[k][4][n][0]+1)+': '+pepResults[k][4][n][1];
+                        }
+                        modStr = modStr.slice(4);
+                        jQuery('.mods', document.getElementById(agiRow)).html(modStr);
+                        this.displayCount++;
+                    }
+                    if (lastIdx < this.whole_sequence.length-1) {
+                        var agiRow = agi_id + this.displayCount.toString();
+                        var modStr = '';
+                        var gapMods = getMods.call(this,lastIdx,this.whole_sequence.length-1);
+                        if (gapMods.length > 0) {
+                            add_agi_row(an_agi,this.displayCount);
+                            while(gapMods.length > 0) {
+                                var newLoneMod = gapMods.shift();
+                                modStr += '<br>'+this.whole_sequence.charAt(newLoneMod[0])+' '+(newLoneMod[0]+1)+': '+newLoneMod[1];
+                            }
+                            modStr = modStr.slice(4);
+                            jQuery('.mods', document.getElementById(agiRow)).html(modStr);
+                        }
+                    }
+
+
+                    // increment the number of AGIs retrieved, check if we're done or if it's time for a callback to grab_agis
+                    agiCount++;
+                    jQuery('#status_field').text(jQuery('#status_field').text().slice(0,11)+' '+agiCount.toString()+' / '+agiTotal.toString());
+                    if (agiCount == agiTotal) {
+                        jQuery('#status_field').text('');
+                        if (haveData == false) {
+                            jQuery('#status_field').text('No results found.');
+                        }
+                    } else if (agiCount % 50 == 0) {
+                        var batchSize = (agiTotal - agiCount > 50) ? 50 : agiTotal - agiCount;
+                        grab_agis(vals.slice(agiCount, agiCount + batchSize));
+                    }
+                })(););
+                */
+
+                mh[batch_vals[i]] = newModhunter;
+                
+                mr.retrieve(batch_vals[i],mh[batch_vals[i]], {
+                    'success' : function() {
+                        if (error_count / j >= 0.5) {
+                            jQuery('.status', new_els).html('<span class="fatal">&nbsp;</span>');
+                        } else if (error_count > 0) {
+                            jQuery('.status', new_els).html('<span class="errors">&nbsp;</span>');
+                        } else {
+                            jQuery('.status', new_els).html('<span class="success">&nbsp;</span>');
+                        }
+                    },
+                    'error' : function() {
+                        var classname = this.toString();
+                        classname = classname.replace(/MASCP./,'');
+                        classname = classname.replace(/Reader/,'');
+                        error_count += 1;
+                        jQuery('.messages', new_els).append(' '+classname+' ');
+                        j += 1;
+                    },
+                    'single_success' : function() {
+                        jQuery('.status', new_els).text('Retrieving data step '+j+' of '+mr._readers.length);
+                        j += 1;
+                    }
+                });
+
+                })();
+            }
+        }
+
+        grab_agis(vals.slice(0,max_val));
+    }
+
+    var unique_agis = function(objOne, objTwo) {
+        var result = [];
+        for (var protein in objOne) {
+            if (objOne.hasOwnProperty(protein)) {
+                result.push(protein);
+            }
+        }
+        for (var protein in objTwo) {
+            if (objTwo.hasOwnProperty(protein) && !objOne.hasOwnProperty(protein)) {
+                result.push(protein);
+            }
+        }
+        return result;
+    };
+
+    // fire when load button is pressed
+    var load_files = function() {
+        var sens = parseInt(jQuery('#sensitivity').val());
+        if (0 > sens || sens > 100) {
+            alert('Please enter a sensitivity between 0 and 100.');
+            return;
+        } else {
+            // store the user's sensitivity in the window object
+            window._sensitivity = sens;
+        }
+        var oneFile = document.getElementById('mode_select_1').checked;
+        var fileOne = document.getElementById('file_input_1').files;
+        var inputObj = {};
+        // if we're in single file mode, do this
+        if (oneFile) {
+            if (!fileOne.length) {
+                alert('Please select an input file.');
+                return;
+            }
+            var reader = new FileReader();
+
+            reader.onload = (function() {
+                return function(evt) {
+                    // inputObj contains all Gator data for these AGIs
+                    // format: { filename : { big data object } } 
+                    inputObj[fileOne[0]] = csv_to_obj(evt.target.result);
+                    rebuild_agi_display(inputObj, 'single');
+                };
+            })();
+            reader.readAsText(fileOne[0]);
+        // if we're in dual file mode, do this
+        } else {
+            var fileTwo = document.getElementById('file_input_2').files;
+            if (!fileOne.length || !fileTwo.length) {
+                alert('Please select two input files.');
+                return;
+            }
+            var readerOne = new FileReader();
+            var readerTwo = new FileReader();
+            var bothLoaded = false;
+
+            // this function is attached to the readers' onload event
+            var double_on_load = function(aFile) {
+                return function(evt) {
+                    if (!bothLoaded) {
+                        bothLoaded = true;
+                        // inputObj contains all Gator data for these AGIs
+                        // format: { filename : { big data object }, filename : { big data object } }                         
+                        inputObj[aFile.name] = csv_to_obj(evt.target.result);
+                        return;
+                    } else {
+                        inputObj[aFile.name] = csv_to_obj(evt.target.result);
+                        rebuild_agi_display(inputObj, 'double');
+                    }
+                };
+            };
+
+            readerOne.onload = double_on_load(fileOne[0]);
+            readerTwo.onload = double_on_load(fileTwo[0]);
+            readerOne.readAsText(fileOne[0]);
+            readerTwo.readAsText(fileTwo[0]);
+        }
+    };
+
+    // fire when mode is switched between single/double file mode
+    var update_inputs = function() {
+        var radioOne = document.getElementById('mode_select_1');
+        var oneFile = radioOne.checked;
+        var fileTwo = document.getElementById('file_input_2');
+        var fileNameTwo = document.getElementById('filename_2');
+        var inButton = document.getElementById('load_button');
+        if (oneFile) {
+            fileTwo.hidden = true;
+            fileNameTwo.hidden = true;
+            inButton.value = 'Load file';
+        } else {
+            fileTwo.hidden = false;
+            fileNameTwo.hidden = false;
+            inButton.value = 'Load files';
+        }
+    };
+
+    // at page load, bind events to UI elements
+    var bind_events = function() {
+        jQuery('#load_button').bind('click', load_files);
+        jQuery('#mode_select_1').bind('change', update_inputs);
+        jQuery('#mode_select_2').bind('change', update_inputs);
+        jQuery('#save').bind('click',save);
+
+        update_inputs();
+    };
+
+    jQuery(document).ready(function() {
+        
+        var supportsXHR = false;
+        if (XMLHttpRequest)
+        {
+            var request = new XMLHttpRequest();
+            if ("withCredentials" in request)
+            {
+                supportsXHR = true;
+            }
+        }
+                
+        if (! supportsXHR || !(window.File && window.FileReader && window.FileList)) {
+            if (document.cookie.indexOf('iesplash') < 0) {
+                showIESplash();
+            }
+        }
+        
+        bind_events();
+        
+        if(!Array.indexOf){
+            Array.prototype.indexOf = function(obj){
+                for(var i=0; i<this.length; i++){
+                    if(this[i]==obj){
+                        return i;
+                    }
+                }
+                return -1;
+            }
+        }
+        
+    });
+
+</script>
+
+<div id="ie_splash" style="display: none; background: #ffffff; border: solid black 2px; width: 50%; left: 25%; top: 5%; height: 80%; position: fixed; padding: 20px;">
+    <h3>Browser compatibility</h3>
+    <img src="img/condensed.png" style="width: 90%;"/>
+    <p>Your current web browser cannot display interactive sequence information, and as such, a fallback technology has been used. The behaviour of the site may be sub-optimal. It is recommended to use a current browser such as <a href="http://www.getfirefox.net/">Firefox</a>, <a href="http://www.google.com/chrome">Google Chrome</a>, <a href="http://code.google.com/chrome/chromeframe/">Google Chrome frame</a> or <a href="http://apple.com/safari">Safari</a> to
+        use this tool.
+    </p>
+    <button onclick="document.getElementById('ie_splash').hideForever();">Never show again</button>
+    <button onclick="document.getElementById('ie_splash').hide();">Hide</button>
+</div>
+
+</body>
+</html>
