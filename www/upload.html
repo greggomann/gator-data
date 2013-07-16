@@ -31,7 +31,23 @@
     
 
     <script type="text/javascript">
-    /*
+    /***********************************************************************************
+    This document provides an interface for a MASCP Gator/Modhunter-based analysis of
+    either one or two shotgun proteomic datasets.
+
+    The user selects the mode: single or double file mode. The user selects and then
+    loads the input files in CSV format.
+
+    Flow of execution:
+    *** load_files() is fired when the Load button is pressed, and the files' data is
+        read into input objects.
+    *** calc_coverage() and scale_coverage() are used to process these input data.
+    *** update_agi_display() uses its function grab_agis() to grab Gator/Modhunter
+        data for each AGI in the input files.
+    *** Depending on the mode, display_single() or display_double() is fired when each
+        modhunter object finishes loading, and the results are displayed.
+
+
     *jQuery table2csv plugin 0.1.0
     *Converts table html element to csv string
     *Copyright (c) 2009 Leonardo Rossetti motw.leo@gmail.com
@@ -263,7 +279,7 @@
         <div id="status_field" style="font-style:italic"></div>
     </ul>
     <table id="results">
-        <tr><th>AGI</th><th>Modifications Activated</th><th>Modifications Deactivated</th></tr>
+        <tr id="results_title_row"><th>AGI</th><th>Modifications Activated</th><th>Modifications Deactivated</th><th id="persistent_activated_column" display="hidden">Persistent<br>Activated Modifications</th><th id="persistent_deactivated_column" display="hidden">Persistent<br>Deactivated Modifications</th></tr>
     </table>
 </div>
 <script type="text/javascript">
@@ -273,6 +289,7 @@
     var mr = new MASCP.BatchRead();
     var mh = new MASCP.Modhunter();
     var odd = false;
+    var haveData = false;
 
     // show the splash screen for users with insufficient feature support
     var showIESplash = function() {
@@ -382,18 +399,22 @@
         return resultObj;
     };
 
-    // Add a new row to output table for @agi, while @count indicates the number of rows for this AGI
-    function add_agi_row(agi,count) {
+    // Add a new row to output table for @agi, while @mode is either 'single' or 'double'
+    function add_agi_row(agi,mode) {
         var agi_id = agi.replace(/\./, '|').toLowerCase();
         if (document.getElementById(agi_id)) {
             return;
         }
         var classthing = odd ? 'class="odd agirow"' : 'class="agirow"';
         odd = ! odd;
-        jQuery('#results').append('<tr id="'+agi_id+count.toString()+'"'+classthing+'><td class="anchor"></td><td class="mods_activated"></td><td class="mods_deactivated"></td></tr>');
-        if (count != 0) {
-            document.getElementById(agi_id+count.toString()+'link').style.display = 'none';
+        if (mode == 'single') {
+            var perString = '';
+        } else if (mode == 'double') {
+            var perString = '<td class="mods_act_persistent"></td><td class="mods_deact_persistent"></td>';
+        } else {
+            return;
         }
+        jQuery('#results').append('<tr id="'+agi_id+'" '+classthing+'><td class="anchor"></td><td class="mods_activated"></td><td class="mods_deactivated"></td>'+perString+'</tr>');
     }
 
     // normalize gator_coverage counts in a modHunter object so they sum to one
@@ -535,27 +556,30 @@
                 }
             }
 
-            // Build strings of activated and deactivated modification sites
-            var deactString = build_string(incResidues);
-            var actString = build_string(decResidues);
+            // Set someData flag if mod sites have been found
+            var someData = (decResidues.length > 0 || incResidues.length > 0);
 
-            add_agi_row(thisAgi, 0);
-            var newAgiAnchor = document.createElement('a');
-            var searchString = '';
-            // If we have results, build search string for anchor href
-            if (decResidues.length > 0 || incResidues.length > 0) {
+            if (someData) {
+                haveData = true;
+                // Build strings of activated and deactivated modification sites
+                var deactString = build_string(incResidues);
+                var actString = build_string(decResidues);
+
+                add_agi_row(thisAgi, 'single');
+                var newAgiAnchor = document.createElement('a');
+                var searchString = '';
+                // If we have results, build search string for anchor href
                 var sepString = (incResidues.length > 0 && decResidues.length > 0) ? ',' : '';
                 searchString = '?highlight=' + deactString.replace(/,\s/g,',').replace(/-/g,',') + sepString + actString.replace(/,\s/g,',').replace(/-/g,',');
+                newAgiAnchor.href = 'index.html' + searchString + '#' + thisAgi;
+                newAgiAnchor.target = '_blank';
+                newAgiAnchor.innerHTML = thisAgi;
+
+                var agiRow = thisAgi.replace(/\./, '|').toLowerCase();
+                jQuery('.anchor', document.getElementById(agiRow)).append(newAgiAnchor);
+                jQuery('.mods_deactivated', document.getElementById(agiRow)).html(deactString);
+                jQuery('.mods_activated', document.getElementById(agiRow)).html(actString);
             }
-            newAgiAnchor.href = 'index.html' + searchString + '#' + thisAgi;
-            newAgiAnchor.target = '_blank';
-            newAgiAnchor.innerHTML = thisAgi;
-
-            var agiRow = thisAgi.replace(/\./, '|').toLowerCase() + '0';
-            jQuery('.anchor', document.getElementById(agiRow)).append(newAgiAnchor);
-
-            jQuery('.mods_deactivated', document.getElementById(agiRow)).html(deactString);
-            jQuery('.mods_activated', document.getElementById(agiRow)).html(actString);
         } else {
             console.log('Error: modhunter agi not found in file data');
         }
@@ -565,13 +589,17 @@
     var display_double = function(modHunter, dataObj) {
         var seqLength = modHunter.whole_sequence.length;
         var thisAgi = modHunter.agi;
+
         // incResidues and decResidues contain the residue indeces that satisfy the entered sensitivity
         var incResidues = [];
         var decResidues = [];
+        var perIncResidues = [];
+        var perDecResidues = [];
+
         // calculate gator_coverage for the uploaded data
         if (calc_coverage(dataObj, modHunter) == 'success') {
             // find the object for this AGI and put it in agiObj
-            var agiObjOne = null;
+            var agiObjOne = false;
             var agiObjTwo;
             for (var filename in dataObj) {
                 if (dataObj.hasOwnProperty(filename)) {
@@ -584,7 +612,7 @@
             }
             if (!agiObjOne || !agiObjTwo) {
                 console.log('error: only one input object found');
-                    console.log(MASCP.renderer);
+                console.log(MASCP.renderer);
                 return;
             }
             // normalize the coverage counts for the modhunter
@@ -592,28 +620,54 @@
 
             // look for significant changes in coverage
             var scaleVar = scale_coverage(dataObj, modHunter);
+            var baseCov = (window._sensitivity/100)/seqLength;
             for (var i = 0; i < seqLength; i++) {
-                var deltaCov = modHunter.sequence[i].gator_coverage_norm - (agiObj.sequence[i].gator_coverage_norm * scaleVar);
-                if (Math.abs(deltaCov) > ((window._sensitivity/100)/seqLength) && agiObj.sequence[i].gator_coverage_norm != 0) {
-                    if (deltaCov > 0) {
+                var deltaCovOne = modHunter.sequence[i].gator_coverage_norm - (agiObjOne.sequence[i].gator_coverage_norm * scaleVar);
+                var deltaCovTwo = modHunter.sequence[i].gator_coverage_norm - (agiObjTwo.sequence[i].gator_coverage_norm * scaleVar);
+                var deltaCovExp = (agiObjOne.sequence[i].gator_coverage_norm) - (agiObjTwo.sequence[i].gator_coverage_norm);
+                var sameSign = ((deltaCovOne > 0) === (deltaCovTwo > 0));
+                if (Math.abs(deltaCovExp) > baseCov && (agiObjOne.sequence[i].gator_coverage_norm != 0 || agiObjTwo.sequence[i].gator_coverage_norm != 0)) {
+                    if (deltaCovExp > 0) {
                         decResidues.push(i);
                     } else {
                         incResidues.push(i);
                     }
+                } else if (sameSign && Math.abs(deltaCovOne) > baseCov && Math.abs(deltaCovTwo) > baseCov && (agiObjOne.sequence[i].gator_coverage_norm != 0 || agiObjTwo.sequence[i].gator_coverage_norm != 0)) {
+                    if (deltaCovOne > 0) {
+                        perDecResidues.push(i);
+                    } else {
+                        perIncResidues.push(i);
+                    }
                 }
             }
-            add_agi_row(thisAgi, 0);
-            var agiRow = thisAgi.replace(/\./, '|').toLowerCase() + '0';
 
-            // Build strings of activated and deactivated modification sites
-            var deactString = build_string(incResidues);
-            var actString = build_string(decResidues);
+            // Set someData flag if mod sites have been found
+            var someData = (decResidues.length > 0 || incResidues.length > 0 || perDecResidues.length > 0 || perIncResidues.length > 0);
 
-            jQuery('.mods_deactivated', document.getElementById(agiRow)).html(deactString);
-            jQuery('.mods_activated', document.getElementById(agiRow)).html(actString);
+            if (someData) {
+                haveData = true;
+                add_agi_row(thisAgi, 'double');
+                var agiRow = thisAgi.replace(/\./, '|').toLowerCase();
+
+                var newAgiAnchor = document.createElement('a');
+                var searchString = '';
+                // If we have results, build search string for anchor href
+                var allResidues = decResidues.concat(incResidues, perDecResidues, perIncResidues);
+                searchString = '?highlight=' + build_string(allResidues).replace(/,\s/g, ',').replace(/-/g, ',');
+                newAgiAnchor.href = 'index.html' + searchString + '#' + thisAgi;
+                newAgiAnchor.target = '_blank';
+                newAgiAnchor.innerHTML = thisAgi;
+
+                jQuery('.anchor', document.getElementById(agiRow)).append(newAgiAnchor);
+                // Build strings of activated, deactivated, and persistent modification sites and display them
+                jQuery('.mods_deactivated', document.getElementById(agiRow)).html(build_string(incResidues));
+                jQuery('.mods_activated', document.getElementById(agiRow)).html(build_string(decResidues));
+                jQuery('.mods_deact_persistent', document.getElementById(agiRow)).html(build_string(perIncResidues));
+                jQuery('.mods_act_persistent', document.getElementById(agiRow)).html(build_string(perDecResidues));
+            }
         } else {
             console.log('Error: modhunter agi not found in file data');
-        }    
+        }
     };
 
     // after data has been uploaded, grab Gator data for appropriate AGIs and display results
@@ -656,7 +710,6 @@
         var agiTotal = vals.length;
         var max_val = (vals.length > 50) ? 50 : vals.length;
         var agiCount = 0;
-        var haveData = false;
         var minModScore = parseInt(jQuery('#min_mod_score').val());
         if (minModScore < 1 || minModScore > 100) {
             jQuery('#min_mod_score').val('50');
@@ -690,7 +743,7 @@
                     if (agiCount == agiTotal) {
                         jQuery('#status_field').text('');
                         if (haveData == false) {
-                            // jQuery('#status_field').text('No results found.');
+                            jQuery('#status_field').text('No results found.');
                         }
                     } else if (agiCount % 50 == 0) {
                         var batchSize = (agiTotal - agiCount > 50) ? 50 : agiTotal - agiCount;
@@ -712,142 +765,6 @@
                         };
                     }
                 })());
-                /*
-                    var pepResults = [];
-                    var snpList = [];
-                    var leftIndex = 0;
-                    var currScore = 0;
-                    var errString = '';
-                    var inPep = false;
-                    var modsInPeps = {};
-                    // getMods grabs confirmed modification sites within a specified index range
-                    var getMods = function(lft, rt) {
-                        var mods = [];
-                        for (m = 0; m < this.confirmed_mods.length; m++) {
-                            if (this.confirmed_mods[m][0] >= lft && this.confirmed_mods[m][0] <= rt) {
-                                var modAdded = false;
-                                for (var o = 0; o < mods.length; o++) {
-                                    if (this.confirmed_mods[m][0] == mods[o][0] && this.confirmed_mods[m][1] == mods[o][1]) {
-                                        modAdded = true;
-                                    }
-                                }
-                                if (!modAdded) {
-                                    mods.push(this.confirmed_mods[m]);
-                                    modsInPeps[m] = true;
-                                }
-                            }
-                        }
-                        mods.sort(function(a,b) { return a[0]-b[0]; });
-                        return mods;
-                    }
-                    if (this.whole_sequence) {
-                        // scan protein sequence and produce regions meeting the minimum mod score
-                        for (var j = 0; j < this.whole_sequence.length; j++) {
-                            var k = j+1;
-                            var minMet = (this.sequence[j].score >= minModScore);
-                            var snpHere = (this.sequence[j].snp_coverage > 0);
-                            if (this.sequence[j].score != currScore) {
-                                if (currScore >= minModScore) {
-                                    // pepResults contains the left index, right index, and mod score, and a list of nsSNP sites
-                                    pepResults.push([leftIndex, j-1, currScore, snpList, getMods.call(this,leftIndex,j)]);
-                                    // reset snpList
-                                    snpList = [];
-                                    if (minMet) {
-                                        if (snpHere) {
-                                            snpList.push(k);
-                                        }
-                                        inPep = true;
-                                        leftIndex = j;
-                                    } else {
-                                        inPep = false;
-                                    }
-                                } else if (minMet) {
-                                    if (snpHere) {
-                                        snpList.push(k);
-                                    }
-                                    inPep = true;
-                                    leftIndex = j;
-                                }
-                                currScore = this.sequence[j].score;
-                            } else if (j == this.whole_sequence.length-1 && currScore >= minModScore) {
-                                if (snpHere) {
-                                    snpList.push(k);
-                                }
-                                pepResults.push([leftIndex, j, currScore, snpList, getMods.call(this,leftIndex,j)]);
-                            } else if (snpHere && inPep) {
-                                snpList.push(k);
-                            }
-                        }
-                    }
-                    
-                    // now populate the table with retrieved results
-                    var lastIdx = 0;
-                    for (var k in pepResults) {
-                        var agiRow = agi_id + this.displayCount.toString();
-                        var modStr = '';
-                        if (pepResults[k][0] > lastIdx) {
-                            var gapMods = getMods.call(this,lastIdx,pepResults[k][0]-1);
-                            if (gapMods.length > 0) {
-                                add_agi_row(an_agi,this.displayCount);
-                                while(gapMods.length > 0) {
-                                    var newLoneMod = gapMods.shift();
-                                    modStr += '<br>'+this.whole_sequence.charAt(newLoneMod[0])+' '+(newLoneMod[0]+1)+': '+newLoneMod[1];
-                                }
-                                modStr = modStr.slice(4);
-                                jQuery('.mods', document.getElementById(agiRow)).html(modStr);
-                                modStr = '';
-                                this.displayCount++;
-                                agiRow = agi_id + this.displayCount.toString();
-                            }
-                        }
-                        lastIdx = pepResults[k][1]+1;
-                        haveData = true;
-                        add_agi_row(an_agi,this.displayCount);
-                        var seqLength = pepResults[k][1]-pepResults[k][0]+1;
-                        var seqStr = (seqLength > 10) ? '...' : '';
-                        var snpStr = pepResults[k][3].toString().replace(/,/g,'; ');
-                        jQuery('.pep_sequence', document.getElementById(agiRow)).html(this.whole_sequence.slice(pepResults[k][0],pepResults[k][0]+Math.min(seqLength,10)) + seqStr);
-                        jQuery('.pep_indeces', document.getElementById(agiRow)).html((pepResults[k][0]+1) + ' - ' + (pepResults[k][1]+1));
-                        jQuery('.mod_score', document.getElementById(agiRow)).html(pepResults[k][2]);
-                        jQuery('.snp', document.getElementById(agiRow)).html(snpStr);
-                        // construct a string from the confirmed modification sites
-                        for (var n = 0; n < pepResults[k][4].length; n++) {
-                            modStr += '<br>'+this.whole_sequence.charAt(pepResults[k][4][n][0])+' '+(pepResults[k][4][n][0]+1)+': '+pepResults[k][4][n][1];
-                        }
-                        modStr = modStr.slice(4);
-                        jQuery('.mods', document.getElementById(agiRow)).html(modStr);
-                        this.displayCount++;
-                    }
-                    if (lastIdx < this.whole_sequence.length-1) {
-                        var agiRow = agi_id + this.displayCount.toString();
-                        var modStr = '';
-                        var gapMods = getMods.call(this,lastIdx,this.whole_sequence.length-1);
-                        if (gapMods.length > 0) {
-                            add_agi_row(an_agi,this.displayCount);
-                            while(gapMods.length > 0) {
-                                var newLoneMod = gapMods.shift();
-                                modStr += '<br>'+this.whole_sequence.charAt(newLoneMod[0])+' '+(newLoneMod[0]+1)+': '+newLoneMod[1];
-                            }
-                            modStr = modStr.slice(4);
-                            jQuery('.mods', document.getElementById(agiRow)).html(modStr);
-                        }
-                    }
-
-
-                    // increment the number of AGIs retrieved, check if we're done or if it's time for a callback to grab_agis
-                    agiCount++;
-                    jQuery('#status_field').text(jQuery('#status_field').text().slice(0,11)+' '+agiCount.toString()+' / '+agiTotal.toString());
-                    if (agiCount == agiTotal) {
-                        jQuery('#status_field').text('');
-                        if (haveData == false) {
-                            jQuery('#status_field').text('No results found.');
-                        }
-                    } else if (agiCount % 50 == 0) {
-                        var batchSize = (agiTotal - agiCount > 50) ? 50 : agiTotal - agiCount;
-                        grab_agis(vals.slice(agiCount, agiCount + batchSize));
-                    }
-                })(););
-                */
 
                 mh[batch_vals[i]] = newModhunter;
                 
@@ -899,6 +816,7 @@
 
     // fire when load button is pressed
     var load_files = function() {
+        haveData = false;
         var sens = parseInt(jQuery('#sensitivity').val());
         if (0 > sens || sens > 100) {
             alert('Please enter a sensitivity between 0 and 100.');
@@ -969,10 +887,14 @@
         var fileNameTwo = document.getElementById('filename_2');
         var inButton = document.getElementById('load_button');
         if (oneFile) {
+            jQuery('#persistent_activated_column').hide();
+            jQuery('#persistent_deactivated_column').hide();
             fileTwo.hidden = true;
             fileNameTwo.hidden = true;
             inButton.value = 'Load file';
         } else {
+            jQuery('#persistent_activated_column').show();
+            jQuery('#persistent_deactivated_column').show();
             fileTwo.hidden = false;
             fileNameTwo.hidden = false;
             inButton.value = 'Load files';
