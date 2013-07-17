@@ -308,6 +308,7 @@ At1g73450.1
     
     var mr = new MASCP.BatchRead();
     var mh = {};
+    var haveData = false;
 
     function unique(a)
     {
@@ -358,7 +359,6 @@ At1g73450.1
         var agiTotal = vals.length;
         var max_val = (vals.length > 50) ? 50 : vals.length;
         var agiCount = 0;
-        var haveData = false;
         var minModScore = parseInt(jQuery('#min_mod_score').val());
         if (minModScore < 1 || minModScore > 100) {
             jQuery('#min_mod_score').val('50');
@@ -451,7 +451,9 @@ At1g73450.1
                             }
                         }
                     }
-                    
+                    if (pepResults.length > 0) {
+                        haveData = true;
+                    }
                     // now populate the table with retrieved results
                     var lastIdx = 0;
                     for (var k in pepResults) {
@@ -473,7 +475,6 @@ At1g73450.1
                             }
                         }
                         lastIdx = pepResults[k][1]+1;
-                        haveData = true;
                         add_agi_row(an_agi,this.displayCount);
                         var seqLength = pepResults[k][1]-pepResults[k][0]+1;
                         var seqStr = (seqLength > 10) ? '...' : '';
@@ -495,6 +496,7 @@ At1g73450.1
                         var modStr = '';
                         var gapMods = getMods.call(this,lastIdx,this.whole_sequence.length-1);
                         if (gapMods.length > 0) {
+                            haveData = true;
                             add_agi_row(an_agi,this.displayCount);
                             while(gapMods.length > 0) {
                                 var newLoneMod = gapMods.shift();
