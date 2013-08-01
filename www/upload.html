@@ -5,6 +5,7 @@
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
     <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta http-equiv="Pragma" content="no-cache">
     
     <title>Modhunter - Data Upload</title>
 
@@ -14,7 +15,7 @@
     window.svgns = 'http://www.w3.org/2000/svg';
     </script>
     
-    <script type="text/javascript" src="js/mascp-jstools.min.js"></script>
+    <script type="text/javascript" src="js/mascp-jstools.js"></script>
     <script type="text/javascript">
       // We should try to load data from the local server.
       MASCP.LOCALSERVER = true;
@@ -281,7 +282,7 @@
         <div id="status_field" style="font-style:italic"></div>
     </ul>
     <table id="results">
-        <tr id="results_title_row"><th>AGI</th><th>Modifications Activated</th><th>Modifications Deactivated</th><th id="persistent_activated_column" display="hidden">Persistent<br>Activated Modifications</th><th id="persistent_deactivated_column" display="hidden">Persistent<br>Deactivated Modifications</th></tr>
+        <tr id="results_title_row"><th>AGI</th><th>Modifications Activated</th><th>Modifications Deactivated</th><th id="persistent_activated_column" display="hidden">Unexpected Peptides<br>(no coverage in database)</th><th id="persistent_deactivated_column" display="hidden">Persistent<br>Deactivated Modifications</th></tr>
     </table>
 </div>
 <script type="text/javascript">
@@ -394,8 +395,6 @@
                     resultObj[entryAgi] = {};
                     resultObj[entryAgi][entryPep] = 1;
                 }
-            } else {
-                console.log('error: less than two elements in input line');
             }
         }
         return resultObj;
@@ -412,7 +411,7 @@
         if (mode == 'single') {
             var perString = '';
         } else if (mode == 'double') {
-            var perString = '<td class="mods_act_persistent"></td><td class="mods_deact_persistent"></td>';
+            var perString = '<td class="mods_new_residues"></td><td class="mods_deact_persistent"></td>';
         } else {
             return;
         }
@@ -526,6 +525,26 @@
         return resultString;
     };
 
+    var build_highlight_string = function(inList) {
+        var resultString = ''
+        var k = 0;
+        while (k < inList.length) {
+            currEntry = ''+inList[k];
+            var p = 1;
+            while (inList[k+p] && inList[k+p] == (inList[k]+p)) {
+                p++;
+            }
+            if (p > 1) {
+                currEntry += ','+inList[k+p-1];
+            } else {
+                currEntry += ','+(currEntry+1);
+            }
+            resultString += (((resultString != '') ? ',' : '') + currEntry);
+            k += p;
+        }
+        return resultString;
+    }
+
     // fill display with results in single file mode
     var display_single = function(modHunter, dataObj) {
         var seqLength = modHunter.whole_sequence.length;
@@ -572,7 +591,7 @@
                 var searchString = '';
                 // If we have results, build search string for anchor href
                 var sepString = (incResidues.length > 0 && decResidues.length > 0) ? ',' : '';
-                searchString = '?highlight=' + deactString.replace(/,\s/g,',').replace(/-/g,',') + sepString + actString.replace(/,\s/g,',').replace(/-/g,',');
+                searchString = '?highlight=' + build_highlight_string(incResidues) + sepString + build_highlight_string(decResidues);
                 newAgiAnchor.href = 'index.html' + searchString + '#' + thisAgi;
                 newAgiAnchor.target = '_blank';
                 newAgiAnchor.innerHTML = thisAgi;
@@ -597,43 +616,60 @@
         var decResidues = [];
         var perIncResidues = [];
         var perDecResidues = [];
+        var newResidues = [];
 
         // calculate gator_coverage for the uploaded data
         if (calc_coverage(dataObj, modHunter) == 'success') {
             // find the object for this AGI and put it in agiObj
-            var agiObjOne = false;
-            var agiObjTwo;
+            // agiObjOne holds the pre-treatment data, agiObjTwo holds the post-treatment data
             for (var filename in dataObj) {
                 if (dataObj.hasOwnProperty(filename)) {
-                    if (agiObjOne) {
-                        agiObjTwo = dataObj[filename][thisAgi];
+                    if (filename == window._prefile) {
+                        var agiObjOne = dataObj[filename][thisAgi];
                     } else {
-                        agiObjOne = dataObj[filename][thisAgi];
+                        var agiObjTwo = dataObj[filename][thisAgi];
                     }
                 }
             }
+            // if the AGI is missing from either dataset, create an agiObj with all zero counts
             if (!agiObjOne || !agiObjTwo) {
-                console.log('error: only one input object found');
-                console.log(MASCP.renderer);
-                return;
+                var targetObj = { 'sequence': {} };
+                for (var i = 0; i < seqLength; i++) {
+                    targetObj.sequence[i] = { 'gator_coverage': 0 };
+                }
+                if (agiObjOne) {
+                    agiObjTwo = targetObj;
+                } else {
+                    agiObjOne = targetObj;
+                }
             }
             // normalize the coverage counts for the modhunter
             norm_modhunter(modHunter);
 
             // look for significant changes in coverage
             var scaleVar = scale_coverage(dataObj, modHunter);
-            var baseCov = (window._sensitivity/100)/seqLength;
+            var sensVal = (window._sensitivity/100);
             for (var i = 0; i < seqLength; i++) {
-                var deltaCovOne = modHunter.sequence[i].gator_coverage_norm - (agiObjOne.sequence[i].gator_coverage_norm * scaleVar);
-                var deltaCovTwo = modHunter.sequence[i].gator_coverage_norm - (agiObjTwo.sequence[i].gator_coverage_norm * scaleVar);
-                var deltaCovExp = (agiObjOne.sequence[i].gator_coverage_norm) - (agiObjTwo.sequence[i].gator_coverage_norm);
-                var sameSign = ((deltaCovOne > 0) === (deltaCovTwo > 0));
-                if (Math.abs(deltaCovExp) > baseCov && (agiObjOne.sequence[i].gator_coverage_norm != 0 || agiObjTwo.sequence[i].gator_coverage_norm != 0)) {
+                //var deltaCovOne = modHunter.sequence[i].gator_coverage_norm - (agiObjOne.sequence[i].gator_coverage_norm * scaleVar);
+                //var deltaCovTwo = modHunter.sequence[i].gator_coverage_norm - (agiObjTwo.sequence[i].gator_coverage_norm * scaleVar);
+                var deltaCovExp = (agiObjOne.sequence[i].gator_coverage) - (agiObjTwo.sequence[i].gator_coverage);
+                //var sameSign = ((deltaCovOne > 0) === (deltaCovTwo > 0));
+
+                // these four boolean values are used in the following test for possible modifications
+                var greaterCov = Math.max(agiObjOne.sequence[i].gator_coverage, agiObjTwo.sequence[i].gator_coverage);
+                var enoughCov = (agiObjOne.sequence[i].gator_coverage > 3 || agiObjTwo.sequence[i].gator_coverage > 3);
+                var nonZero = (agiObjOne.sequence[i].gator_coverage != 0 || agiObjTwo.sequence[i].gator_coverage != 0);
+                var maxGator = (modHunter.sequence[i].gator_coverage < 100);
+                if (Math.abs(deltaCovExp) > (greaterCov*sensVal) && nonZero && enoughCov && maxGator) {
                     if (deltaCovExp > 0) {
                         decResidues.push(i);
                     } else {
                         incResidues.push(i);
                     }
+                } else if (nonZero && modHunter.sequence[i].gator_coverage === 0) {
+                    newResidues.push(i);
+                }
+                /*
                 } else if (sameSign && Math.abs(deltaCovOne) > baseCov && Math.abs(deltaCovTwo) > baseCov && (agiObjOne.sequence[i].gator_coverage_norm != 0 || agiObjTwo.sequence[i].gator_coverage_norm != 0)) {
                     if (deltaCovOne > 0) {
                         perDecResidues.push(i);
@@ -641,10 +677,11 @@
                         perIncResidues.push(i);
                     }
                 }
+                */
             }
 
             // Set someData flag if mod sites have been found
-            var someData = (decResidues.length > 0 || incResidues.length > 0 || perDecResidues.length > 0 || perIncResidues.length > 0);
+            var someData = (decResidues.length > 0 || incResidues.length > 0 || newResidues.length > 0 || perIncResidues.length > 0);
 
             if (someData) {
                 haveData = true;
@@ -655,7 +692,7 @@
                 var searchString = '';
                 // If we have results, build search string for anchor href
                 var allResidues = decResidues.concat(incResidues, perDecResidues, perIncResidues);
-                searchString = '?highlight=' + build_string(allResidues).replace(/,\s/g, ',').replace(/-/g, ',');
+                searchString = '?highlight=' + build_highlight_string(allResidues);
                 newAgiAnchor.href = 'index.html' + searchString + '#' + thisAgi;
                 newAgiAnchor.target = '_blank';
                 newAgiAnchor.innerHTML = thisAgi;
@@ -664,7 +701,7 @@
                 // Build strings of activated, deactivated, and persistent modification sites and display them
                 jQuery('.mods_deactivated', document.getElementById(agiRow)).html(build_string(incResidues));
                 jQuery('.mods_activated', document.getElementById(agiRow)).html(build_string(decResidues));
-                jQuery('.mods_deact_persistent', document.getElementById(agiRow)).html(build_string(perIncResidues));
+                jQuery('.mods_new_residues', document.getElementById(agiRow)).html(build_string(newResidues));
                 jQuery('.mods_act_persistent', document.getElementById(agiRow)).html(build_string(perDecResidues));
             }
         } else {
@@ -767,6 +804,10 @@
                         };
                     }
                 })());
+
+                newModhunter.bind('agiNotFound', function(e) {
+                    update_status();
+                });
 
                 mh[batch_vals[i]] = newModhunter;
                 
@@ -878,6 +919,8 @@
             readerTwo.onload = double_on_load(fileTwo[0]);
             readerOne.readAsText(fileOne[0]);
             readerTwo.readAsText(fileTwo[0]);
+            // Store pre-treatment filename to distinguish datasets later
+            window._prefile = fileOne[0].name;
         }
     };
 

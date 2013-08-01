@@ -568,6 +568,7 @@ jQuery(document).ready(function() {
 
             this.bind('resultReceived',result_function);
             this.bind('requestComplete', complete_function);
+            this.bind('requestIncomplete', complete_function);
             this.retrieve();
         });
     

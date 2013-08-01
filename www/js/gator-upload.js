@@ -47,6 +47,12 @@ MASCP.BatchRead.prototype.retrieve = function(agi, modHunter, opts) {
 
     var self = this;
 
+    var modhunter_done = function() {
+        self._in_call = false;
+        bean.fire(modHunter,'agiComplete');
+        bean.fire(self,'resultReceived');
+    };
+
     if ( ! opts ) {
         opts = {};
     }
@@ -63,17 +69,21 @@ MASCP.BatchRead.prototype.retrieve = function(agi, modHunter, opts) {
 
     // Initialize modHunter with protein sequence from tairReader
     var tairReader = new MASCP.TairReader(agi,MASCP.LOCALSERVER ? '/data/latest/gator' : null);
-    tairReader._firstTry = true;
+    tairReader._tries = 1;
     tairReader.bind('resultReceived', function() {
         modHunter.loadSequence(modHunter, this.result.getSequence());
     });
-    tairReader.bind('error', function() {
-        if (this._firstTry) {
-            this._firstTry = false;
-            this.retrieve();
+    tairReader.bind('error', function(err) {
+        if (this._tries < 4) {
+            this._tries++;
+            var trRdr = this;
+            this._timeoutID = window.setTimeout(trRdr.retrieve(), 300);
         } else {
-            opts.success.call();
-            modhunter_done();
+            bean.fire(modHunter, 'agiNotFound');
+            self._in_call = false;
+            bean.fire(self,'resultReceived');
+            console.log('"'+agi+'"');
+            console.log('agi not found');
         }
     });
     tairReader.agi = agi;
@@ -100,12 +110,6 @@ MASCP.BatchRead.prototype.retrieve = function(agi, modHunter, opts) {
         } else {
             modHunter.bind('sequenceLoaded',function (e) { trigger_done.call(self); });
         }
-    };
-
-    var modhunter_done = function() {
-        self._in_call = false;
-        bean.fire(modHunter,'agiComplete');
-        bean.fire(self,'resultReceived');
     };
 
     var res_received = function() {
