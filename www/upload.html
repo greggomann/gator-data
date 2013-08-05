@@ -5,7 +5,9 @@
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
     <meta http-equiv="X-UA-Compatible" content="chrome=1">
-    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="cache-control" content="no-store, no-cache, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-store, no-cache" />
+    <meta http-equiv="Expires" content="0" />
     
     <title>Modhunter - Data Upload</title>
 
@@ -164,9 +166,9 @@
         #file_input_div {
             position: absolute;
             top: 10px;
-            bottom: 110px;
+            bottom: 10px;
             width: 260px;
-            height: 195px;
+            height: 250px;
             overflow: hidden;
         }
 
@@ -237,15 +239,9 @@
 </head>
 
 <body>
-<!--
-<div style="position: absolute; top: 10px; left: 10px; width: 25%; display: none;">
-    <h1 style="position: absolute; left: 0px; top: 0px; margin: 0px; width: 100%; font-size: 10px; "><span>MASCP AggreGATOR</span><img style="height: 50px; top: 50%; left: -7px; position: absolute;" src="gator.png" /></h1>
-</div>
-<a style="display: block; position: absolute; top: 10px; left: 10px; width: 90px; height: 68px; background-image: url(http://www.masc-proteomics.org/mascp/skins/common/images/mascp_logo.png);" href="http://www.masc-proteomics.org/" title="MASC Proteomics portal"></a>
--->
 
 <div id="file_input_div" class="rounded_box" style="">
-    <div class="inset" for="min_mod_score">
+    <div class="inset">
         <input id="mode_select_1" type="radio" name="mode_select" checked /><label for="mode_select_1">Single dataset</label>
         <br>
         <input id="mode_select_2" type="radio" name="mode_select" /><label for="mode_select_2">Two dataset comparison</label>
@@ -254,12 +250,23 @@
         <label for="sensitivity" style="font-size:12px">Sensitivity (0-100):</label>
         <input type="text" name="sensitivity" id="sensitivity" value="50" />
         <br><br>
+        <div id="pre_text">
+        Pre-treatment:
+        <br>
+        </div>
         <label for="file_input_1" id="file_input_1_label"></label><input type="file" id="file_input_1" name="file_input_1" />
         <div id="filename_1"></div>
+        <br>
+        <div id="post_text">
+        Post-treatment:
+        <br>
+        </div>
         <label for="file_input_2" id="file_input_2_label"></label><input type="file" id="file_input_2" name="file_input_2" />
         <div id="filename_2"></div>
         <br>
-        <div><input type="button" id="load_button" value="Load files" /></div>
+        <input type="checkbox" id="iaa_input" /><label for="iaa_input">Treated with IAA?</label>
+        <br><br>
+        <div><input type="button" id="load_button" value="Load & Analyze" /></div>
     </div>
 </div>
 
@@ -282,7 +289,7 @@
         <div id="status_field" style="font-style:italic"></div>
     </ul>
     <table id="results">
-        <tr id="results_title_row"><th>AGI</th><th>Modifications Activated</th><th>Modifications Deactivated</th><th id="persistent_activated_column" display="hidden">Unexpected Peptides<br>(no coverage in database)</th><th id="persistent_deactivated_column" display="hidden">Persistent<br>Deactivated Modifications</th></tr>
+        <tr id="results_title_row"><th>AGI</th><th>Modifications Activated</th><th>Modifications Deactivated</th><th id="unexpected_peptides_column" display="hidden">Unexpected Peptides<br>(no coverage in database)</th></tr>
     </table>
 </div>
 <script type="text/javascript">
@@ -411,7 +418,7 @@
         if (mode == 'single') {
             var perString = '';
         } else if (mode == 'double') {
-            var perString = '<td class="mods_new_residues"></td><td class="mods_deact_persistent"></td>';
+            var perString = '<td class="mods_new_residues"></td>';
         } else {
             return;
         }
@@ -526,29 +533,62 @@
     };
 
     var build_highlight_string = function(inList) {
-        var resultString = ''
-        var k = 0;
-        while (k < inList.length) {
-            currEntry = ''+inList[k];
-            var p = 1;
-            while (inList[k+p] && inList[k+p] == (inList[k]+p)) {
-                p++;
+        if (inList.length == 1) {
+            return inList[0]+','+(inList[0]+1);
+        } else {
+            var resultString = ''
+            var k = 0;
+            while (k < inList.length) {
+                currEntry = ''+inList[k];
+                var p = 1;
+                while (inList[k+p] && inList[k+p] == (inList[k]+p)) {
+                    p++;
+                }
+                if (p > 1) {
+                    currEntry += ','+(inList[k+p-1]+1);
+                } else {
+                    currEntry += ','+(currEntry+1);
+                }
+                resultString += (((resultString != '') ? ',' : '') + currEntry);
+                k += p;
             }
-            if (p > 1) {
-                currEntry += ','+inList[k+p-1];
-            } else {
-                currEntry += ','+(currEntry+1);
-            }
-            resultString += (((resultString != '') ? ',' : '') + currEntry);
-            k += p;
+            return resultString;
         }
-        return resultString;
     }
+
+    // find indeces of tryptic peptides containing cysteines
+    // returns peptide indeces, base zero (first residue is index 0)
+    var get_cys_peps = function(protSeq) {
+        var trypIdx = -1;
+        var cysFlag = false;
+        var results = [];
+        for (var i = 0; i < protSeq.length; i++) {
+            if (protSeq[i] == 'C') {
+                cysFlag = true;
+            }
+            if (protSeq[i] == 'K' || protSeq[i] == 'R' || i == protSeq.length-1) {
+                if (cysFlag) {
+                    for (j = trypIdx+1; j <= i; j++) {
+                        results.push(j);
+                    }
+                    cysFlag = false;
+                }
+                trypIdx = i;
+            }
+        }
+        return results;
+    };
 
     // fill display with results in single file mode
     var display_single = function(modHunter, dataObj) {
         var seqLength = modHunter.whole_sequence.length;
         var thisAgi = modHunter.agi;
+
+        var cysPeps = [];
+        if (!document.getElementById('iaa_input').checked) {
+            cysPeps = get_cys_peps(modHunter.whole_sequence);
+        }
+
         // incResidues and decResidues contain the residue indeces that satisfy the entered sensitivity
         var incResidues = [];
         var decResidues = [];
@@ -567,12 +607,14 @@
             // look for significant changes in coverage
             var scaleVar = scale_coverage(dataObj, modHunter);
             for (var i = 0; i < seqLength; i++) {
-                var deltaCov = modHunter.sequence[i].gator_coverage_norm - (agiObj.sequence[i].gator_coverage_norm * scaleVar);
-                if (Math.abs(deltaCov) > ((window._sensitivity/100)/seqLength) && agiObj.sequence[i].gator_coverage_norm != 0) {
-                    if (deltaCov > 0) {
-                        decResidues.push(i);
-                    } else {
-                        incResidues.push(i);
+                if (cysPeps.indexOf(i) < 0) {
+                    var deltaCov = modHunter.sequence[i].gator_coverage_norm - (agiObj.sequence[i].gator_coverage_norm * scaleVar);
+                    if (Math.abs(deltaCov) > ((window._sensitivity/100)/seqLength) && agiObj.sequence[i].gator_coverage_norm != 0) {
+                        if (deltaCov > 0) {
+                            decResidues.push(i);
+                        } else {
+                            incResidues.push(i);
+                        }
                     }
                 }
             }
@@ -608,14 +650,16 @@
 
     // fill display with results in double file mode
     var display_double = function(modHunter, dataObj) {
+        var cysPeps = [];
+        if (!document.getElementById('iaa_input').checked) {
+            cysPeps = get_cys_peps(modHunter.whole_sequence);
+        }
         var seqLength = modHunter.whole_sequence.length;
         var thisAgi = modHunter.agi;
 
         // incResidues and decResidues contain the residue indeces that satisfy the entered sensitivity
         var incResidues = [];
         var decResidues = [];
-        var perIncResidues = [];
-        var perDecResidues = [];
         var newResidues = [];
 
         // calculate gator_coverage for the uploaded data
@@ -643,45 +687,32 @@
                     agiObjOne = targetObj;
                 }
             }
-            // normalize the coverage counts for the modhunter
-            norm_modhunter(modHunter);
 
             // look for significant changes in coverage
-            var scaleVar = scale_coverage(dataObj, modHunter);
+            //var scaleVar = scale_coverage(dataObj, modHunter);
             var sensVal = (window._sensitivity/100);
             for (var i = 0; i < seqLength; i++) {
-                //var deltaCovOne = modHunter.sequence[i].gator_coverage_norm - (agiObjOne.sequence[i].gator_coverage_norm * scaleVar);
-                //var deltaCovTwo = modHunter.sequence[i].gator_coverage_norm - (agiObjTwo.sequence[i].gator_coverage_norm * scaleVar);
-                var deltaCovExp = (agiObjOne.sequence[i].gator_coverage) - (agiObjTwo.sequence[i].gator_coverage);
-                //var sameSign = ((deltaCovOne > 0) === (deltaCovTwo > 0));
+                if (cysPeps.indexOf(i) < 0) {
+                    var deltaCovExp = (agiObjOne.sequence[i].gator_coverage) - (agiObjTwo.sequence[i].gator_coverage);
 
-                // these four boolean values are used in the following test for possible modifications
-                var greaterCov = Math.max(agiObjOne.sequence[i].gator_coverage, agiObjTwo.sequence[i].gator_coverage);
-                var enoughCov = (agiObjOne.sequence[i].gator_coverage > 3 || agiObjTwo.sequence[i].gator_coverage > 3);
-                var nonZero = (agiObjOne.sequence[i].gator_coverage != 0 || agiObjTwo.sequence[i].gator_coverage != 0);
-                var maxGator = (modHunter.sequence[i].gator_coverage < 100);
-                if (Math.abs(deltaCovExp) > (greaterCov*sensVal) && nonZero && enoughCov && maxGator) {
-                    if (deltaCovExp > 0) {
-                        decResidues.push(i);
-                    } else {
-                        incResidues.push(i);
-                    }
-                } else if (nonZero && modHunter.sequence[i].gator_coverage === 0) {
-                    newResidues.push(i);
-                }
-                /*
-                } else if (sameSign && Math.abs(deltaCovOne) > baseCov && Math.abs(deltaCovTwo) > baseCov && (agiObjOne.sequence[i].gator_coverage_norm != 0 || agiObjTwo.sequence[i].gator_coverage_norm != 0)) {
-                    if (deltaCovOne > 0) {
-                        perDecResidues.push(i);
-                    } else {
-                        perIncResidues.push(i);
+                    // these four boolean values are used in the following test for possible modifications
+                    var greaterCov = Math.max(agiObjOne.sequence[i].gator_coverage, agiObjTwo.sequence[i].gator_coverage);
+                    var enoughCov = (agiObjOne.sequence[i].gator_coverage > 3 || agiObjTwo.sequence[i].gator_coverage > 3);
+                    var nonZero = (agiObjOne.sequence[i].gator_coverage != 0 || agiObjTwo.sequence[i].gator_coverage != 0);
+                    if (Math.abs(deltaCovExp) > (greaterCov*sensVal) && nonZero && enoughCov) {
+                        if (deltaCovExp > 0 && modHunter.sequence[i].gator_coverage > 1) {
+                            decResidues.push(i);
+                        } else if (deltaCovExp < 0 && modHunter.sequence[i].gator_coverage === 0) {
+                            incResidues.push(i);
+                        }
+                    } else if (nonZero && modHunter.sequence[i].gator_coverage === 0) {
+                        newResidues.push(i);
                     }
                 }
-                */
             }
 
             // Set someData flag if mod sites have been found
-            var someData = (decResidues.length > 0 || incResidues.length > 0 || newResidues.length > 0 || perIncResidues.length > 0);
+            var someData = (decResidues.length > 0 || incResidues.length > 0 || newResidues.length > 0);
 
             if (someData) {
                 haveData = true;
@@ -691,18 +722,17 @@
                 var newAgiAnchor = document.createElement('a');
                 var searchString = '';
                 // If we have results, build search string for anchor href
-                var allResidues = decResidues.concat(incResidues, perDecResidues, perIncResidues);
+                var allResidues = decResidues.concat(incResidues, newResidues);
                 searchString = '?highlight=' + build_highlight_string(allResidues);
                 newAgiAnchor.href = 'index.html' + searchString + '#' + thisAgi;
                 newAgiAnchor.target = '_blank';
                 newAgiAnchor.innerHTML = thisAgi;
 
                 jQuery('.anchor', document.getElementById(agiRow)).append(newAgiAnchor);
-                // Build strings of activated, deactivated, and persistent modification sites and display them
+                // Build strings of activated & deactivated mod sites and unexpected peptides and display them
                 jQuery('.mods_deactivated', document.getElementById(agiRow)).html(build_string(incResidues));
                 jQuery('.mods_activated', document.getElementById(agiRow)).html(build_string(decResidues));
                 jQuery('.mods_new_residues', document.getElementById(agiRow)).html(build_string(newResidues));
-                jQuery('.mods_act_persistent', document.getElementById(agiRow)).html(build_string(perDecResidues));
             }
         } else {
             console.log('Error: modhunter agi not found in file data');
@@ -749,30 +779,20 @@
         var agiTotal = vals.length;
         var max_val = (vals.length > 50) ? 50 : vals.length;
         var agiCount = 0;
-        var minModScore = parseInt(jQuery('#min_mod_score').val());
-        if (minModScore < 1 || minModScore > 100) {
-            jQuery('#min_mod_score').val('50');
-            minModScore = 50;
-        }
         
         // grab_agis collects data for the AGIs given in @batch_vals, bound to agiComplete event if over 50 AGIs in @vals
         function grab_agis(batch_vals) {
             for (var i = 0; i < batch_vals.length; i++ ) {
-                (function() {
                 if (batch_vals[i].replace(/\s*/g,'') == '') {
                     return;
                 }
-                var new_els = jQuery('<div><span>'+batch_vals[i]+'</span><span class="status">Loading..</span><span class="messages"></span></div>')[0];
-                new_els.status = jQuery('.status', new_els);
-                new_els.agi = batch_vals[i];
                 var agi_id = batch_vals[i].replace(/\./, '|').toLowerCase();
                 var j = 1;
-                var an_agi = new_els.agi;
                 var error_count = 0;
 
+                // create modhunter object, initialize it with this AGI
                 var newModhunter = new MASCP.Modhunter();
                 newModhunter.displayCount = 0;
-                // tell the modHunter which agi it's being used for
                 newModhunter.agi = batch_vals[i].toUpperCase();
 
                 // update the status text field and check if we need to fire another batch read process
@@ -804,7 +824,7 @@
                         };
                     }
                 })());
-
+                
                 newModhunter.bind('agiNotFound', function(e) {
                     update_status();
                 });
@@ -812,30 +832,10 @@
                 mh[batch_vals[i]] = newModhunter;
                 
                 mr.retrieve(batch_vals[i],mh[batch_vals[i]], {
-                    'success' : function() {
-                        if (error_count / j >= 0.5) {
-                            jQuery('.status', new_els).html('<span class="fatal">&nbsp;</span>');
-                        } else if (error_count > 0) {
-                            jQuery('.status', new_els).html('<span class="errors">&nbsp;</span>');
-                        } else {
-                            jQuery('.status', new_els).html('<span class="success">&nbsp;</span>');
-                        }
-                    },
-                    'error' : function() {
-                        var classname = this.toString();
-                        classname = classname.replace(/MASCP./,'');
-                        classname = classname.replace(/Reader/,'');
-                        error_count += 1;
-                        jQuery('.messages', new_els).append(' '+classname+' ');
-                        j += 1;
-                    },
-                    'single_success' : function() {
-                        jQuery('.status', new_els).text('Retrieving data step '+j+' of '+mr._readers.length);
-                        j += 1;
-                    }
+                    'success' : function() { },
+                    'error' : function() { },
+                    'single_success' : function() { }
                 });
-
-                })();
             }
         }
 
@@ -859,7 +859,9 @@
 
     // fire when load button is pressed
     var load_files = function() {
+        agiCount = 0;
         haveData = false;
+        mr._in_call = false;
         var sens = parseInt(jQuery('#sensitivity').val());
         if (0 > sens || sens > 100) {
             alert('Please enter a sensitivity between 0 and 100.');
@@ -932,17 +934,19 @@
         var fileNameTwo = document.getElementById('filename_2');
         var inButton = document.getElementById('load_button');
         if (oneFile) {
-            jQuery('#persistent_activated_column').hide();
-            jQuery('#persistent_deactivated_column').hide();
+            jQuery('#unexpected_peptides_column').hide();
+            jQuery('#pre_text').hide();
+            jQuery('#post_text').hide();
+            jQuery('#file_input_div').height(190);
             fileTwo.hidden = true;
             fileNameTwo.hidden = true;
-            inButton.value = 'Load file';
         } else {
-            jQuery('#persistent_activated_column').show();
-            jQuery('#persistent_deactivated_column').show();
+            jQuery('#unexpected_peptides_column').show();
+            jQuery('#pre_text').show();
+            jQuery('#post_text').show();
+            jQuery('#file_input_div').height(250);
             fileTwo.hidden = false;
             fileNameTwo.hidden = false;
-            inButton.value = 'Load files';
         }
     };
 

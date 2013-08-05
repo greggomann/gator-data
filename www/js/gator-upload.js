@@ -12,7 +12,7 @@ MASCP.BatchRead.prototype._make_readers = function() {
 
     var rdr,rdr_id;
     for (rdr_id in READER_CONF) {
-        if (READER_CONF.hasOwnProperty(rdr_id)) {
+        if (READER_CONF.hasOwnProperty(rdr_id) && rdr_id != MASCP.TairReader) {
             rdr = READER_CONF[rdr_id];
             var clazz = rdr.definition;
             var reader = new clazz(null, rdr.url);
@@ -47,16 +47,6 @@ MASCP.BatchRead.prototype.retrieve = function(agi, modHunter, opts) {
 
     var self = this;
 
-    var modhunter_done = function() {
-        self._in_call = false;
-        bean.fire(modHunter,'agiComplete');
-        bean.fire(self,'resultReceived');
-    };
-
-    if ( ! opts ) {
-        opts = {};
-    }
-
     // If a call is already in progress, add a handler to make next call when current is complete
     if (self._in_call) {
         var self_func = arguments.callee;
@@ -67,32 +57,44 @@ MASCP.BatchRead.prototype.retrieve = function(agi, modHunter, opts) {
         return;
     }
 
+    self._in_call = true;
+
+    var modhunter_done = function() {
+        self._in_call = false;
+        bean.fire(modHunter,'agiComplete');
+        bean.fire(self,'resultReceived');
+    };
+
+    var tair_error = function(e) {
+        if (this._tries < 1) {
+            this._tries++;
+            var trRdr = this;
+            this._timeoutID = window.setTimeout(trRdr.retrieve(), 300);
+        } else {
+            self._in_call = false;
+            bean.fire(modHunter, 'agiNotFound');
+            bean.fire(self,'resultReceived');
+            console.log('"'+agi+'":');
+            console.log('agi not found');
+        }
+    };
+
+    if ( ! opts ) {
+        opts = {};
+    }
+
     // Initialize modHunter with protein sequence from tairReader
     var tairReader = new MASCP.TairReader(agi,MASCP.LOCALSERVER ? '/data/latest/gator' : null);
     tairReader._tries = 1;
     tairReader.bind('resultReceived', function() {
         modHunter.loadSequence(modHunter, this.result.getSequence());
     });
-    tairReader.bind('error', function(err) {
-        if (this._tries < 4) {
-            this._tries++;
-            var trRdr = this;
-            this._timeoutID = window.setTimeout(trRdr.retrieve(), 300);
-        } else {
-            bean.fire(modHunter, 'agiNotFound');
-            self._in_call = false;
-            bean.fire(self,'resultReceived');
-            console.log('"'+agi+'"');
-            console.log('agi not found');
-        }
-    });
+    tairReader.bind('error',tair_error);
     tairReader.agi = agi;
     tairReader.retrieve();
 
     // for a single reader, events: single_success
     // bound for all readers, events: error, success
-
-    self._in_call = true;
 
     var result_count = self._readers.length;
 
