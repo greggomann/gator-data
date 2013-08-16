@@ -17,7 +17,7 @@
     window.svgns = 'http://www.w3.org/2000/svg';
     </script>
     
-    <script type="text/javascript" src="js/mascp-jstools.js"></script>
+    <script type="text/javascript" src="js/mascp-jstools.min.js"></script>
     <script type="text/javascript">
       // We should try to load data from the local server.
       MASCP.LOCALSERVER = true;
@@ -777,69 +777,65 @@
         // mh is an object literal containing our modhunter objects for this collection of AGIs
         mh = {};
         var agiTotal = vals.length;
-        var max_val = (vals.length > 50) ? 50 : vals.length;
         var agiCount = 0;
         
         // grab_agis collects data for the AGIs given in @batch_vals, bound to agiComplete event if over 50 AGIs in @vals
-        function grab_agis(batch_vals) {
-            for (var i = 0; i < batch_vals.length; i++ ) {
-                if (batch_vals[i].replace(/\s*/g,'') == '') {
-                    return;
-                }
-                var agi_id = batch_vals[i].replace(/\./, '|').toLowerCase();
-                var j = 1;
-                var error_count = 0;
-
-                // create modhunter object, initialize it with this AGI
-                var newModhunter = new MASCP.Modhunter();
-                newModhunter.displayCount = 0;
-                newModhunter.agi = batch_vals[i].toUpperCase();
-
-                // update the status text field and check if we need to fire another batch read process
-                var update_status = function() {
-                    agiCount++;
-                    jQuery('#status_field').text(jQuery('#status_field').text().slice(0,11)+' '+agiCount.toString()+' / '+agiTotal.toString());
-                    if (agiCount == agiTotal) {
-                        jQuery('#status_field').text('');
-                        if (haveData == false) {
-                            jQuery('#status_field').text('No results found.');
-                        }
-                    } else if (agiCount % 50 == 0) {
-                        var batchSize = (agiTotal - agiCount > 50) ? 50 : agiTotal - agiCount;
-                        grab_agis(vals.slice(agiCount, agiCount + batchSize));
-                    }
-                };
-
-                // fire this when all modification data has been produced for the AGI associated with this modhunter object
-                newModhunter.bind('agiComplete', (function() {
-                    if (mode == 'single') {
-                        return function(e) {
-                            display_single(this, inputObj);
-                            update_status();
-                        };
-                    } else if (mode == 'double') {
-                        return function(e) {
-                            display_double(this, inputObj);
-                            update_status();
-                        };
-                    }
-                })());
-                
-                newModhunter.bind('agiNotFound', function(e) {
-                    update_status();
-                });
-
-                mh[batch_vals[i]] = newModhunter;
-                
-                mr.retrieve(batch_vals[i],mh[batch_vals[i]], {
-                    'success' : function() { },
-                    'error' : function() { },
-                    'single_success' : function() { }
-                });
+        function grab_agis(val) {
+            if (val.replace(/\s*/g,'') == '') {
+                return;
             }
+            var agi_id = val.replace(/\./, '|').toLowerCase();
+            var j = 1;
+            var error_count = 0;
+
+            // create modhunter object, initialize it with this AGI
+            var newModhunter = new MASCP.Modhunter();
+            newModhunter.displayCount = 0;
+            newModhunter.agi = val.toUpperCase();
+
+            // update the status text field and check if we need to fire another batch read process
+            var update_status = function() {
+                agiCount++;
+                jQuery('#status_field').text(jQuery('#status_field').text().slice(0,11)+' '+agiCount.toString()+' / '+agiTotal.toString());
+                if (agiCount == agiTotal) {
+                    jQuery('#status_field').text('');
+                    if (!haveData) {
+                        jQuery('#status_field').text('No results found.');
+                    }
+                } else {
+                    grab_agis(vals[agiCount]);
+                }
+            };
+
+            // fire this when all modification data has been produced for the AGI associated with this modhunter object
+            newModhunter.bind('agiComplete', (function() {
+                if (mode == 'single') {
+                    return function(e) {
+                        display_single(this, inputObj);
+                        update_status();
+                    };
+                } else if (mode == 'double') {
+                    return function(e) {
+                        display_double(this, inputObj);
+                        update_status();
+                    };
+                }
+            })());
+            
+            newModhunter.bind('agiNotFound', function(e) {
+                update_status();
+            });
+
+            mh[val] = newModhunter;
+            
+            mr.retrieve(val,mh[val], {
+                'success' : function() { },
+                'error' : function() { },
+                'single_success' : function() { }
+            });
         }
 
-        grab_agis(vals.slice(0,max_val));
+        grab_agis(vals[0]);
     }
 
     var unique_agis = function(objOne, objTwo) {

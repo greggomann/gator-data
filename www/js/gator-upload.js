@@ -66,10 +66,10 @@ MASCP.BatchRead.prototype.retrieve = function(agi, modHunter, opts) {
     };
 
     var tair_error = function(e) {
-        if (this._tries < 1) {
+        if (this._tries < 3) {
             this._tries++;
             var trRdr = this;
-            this._timeoutID = window.setTimeout(trRdr.retrieve(), 300);
+            this._timeoutID = window.setTimeout(trRdr.retrieve(), 100);
         } else {
             self._in_call = false;
             bean.fire(modHunter, 'agiNotFound');
