@@ -80,19 +80,6 @@ var READER_CONF = (function() {
                         },
         'layers'        : []
     },
-    MASCP.PromexReader, { 
-        'definition'    : MASCP.PromexReader,
-        'nicename'      : 'ProMEX',
-        'error_url'     : 'http://promex.pph.univie.ac.at/promex/',
-        'success_url'   : 'http://promex.pph.univie.ac.at/promex/?ac=#locus=true',
-        'result'        : function() {
-                            if (this.result.getPeptides().length > 0) {
-                                jQuery('#promex_placeholder').show();
-                            }
-                        },
-        'layers'        : ['promex_experimental'],
-        'placeholder'   : true
-    },
     /*MASCP.InterproReader, { 
         'definition'    : MASCP.InterproReader,
         'nicename'      : 'Interpro',
@@ -141,6 +128,19 @@ var READER_CONF = (function() {
                             },
         'layers'        : ['proteotypic_experimental'],
         'staticlink'    : true,
+        'placeholder'   : true
+    },
+    MASCP.PromexReader, { 
+        'definition'    : MASCP.PromexReader,
+        'nicename'      : 'ProMEX',
+        'error_url'     : 'http://promex.pph.univie.ac.at/promex/',
+        'success_url'   : 'http://promex.pph.univie.ac.at/promex/?ac=#locus=true',
+        'result'        : function() {
+                            if (this.result.getPeptides().length > 0) {
+                                jQuery('#promex_placeholder').show();
+                            }
+                        },
+        'layers'        : ['promex_experimental'],
         'placeholder'   : true
     },
     MASCP.AtChloroReader, {
