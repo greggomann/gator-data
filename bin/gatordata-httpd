@@ -20,10 +20,13 @@ var resource_map = {
     'promex'    : MASCP.PromexReader,
     'rippdb'    : MASCP.RippdbReader,
     'glycomod'  : MASCP.GlycoModReader,
+    'mox'       : MASCP.MoxReader,
+    'sno'       : MASCP.SnoReader,
     'suba'      : MASCP.SubaReader,
     'ArbitraryData' : MASCP.ArbitraryDataReader,
     'rnaedit'   : MASCP.RnaEditReader,
     'ubiquitin' : MASCP.UbiquitinReader,
+    'nterm' : MASCP.NTermReader,
     'processing': MASCP.ProcessingReader,
     'nssnps'    : MASCP.SnpReader,
     'proteotypic' : MASCP.ProteotypicReader
@@ -42,7 +45,7 @@ MASCP.events.once('ready',function() {
         app.use(express.static(__dirname + '/../node_modules/mascp-jstools/dist'));
         app.use(app.router);
     });
-    
+
     if (argv.static) {
         app.listen(port,'127.0.0.1');
         console.log('Server running at http://127.0.0.1:'+port+'/');
@@ -58,7 +61,7 @@ MASCP.events.once('ready',function() {
         res.header('Access-Control-Allow-Headers','x-requested-with');
         res.header('Access-Control-Max-Age','1728000');
         res.header('Access-Control-Allow-Origin','*');
-        res.header('Access-Control-Allow-Methods','*');        
+        res.header('Access-Control-Allow-Methods','*');
         next();
     }
 
@@ -95,7 +98,7 @@ MASCP.events.once('ready',function() {
             }
         });
     });
-    
+
     app.get('/data/latest/gator',function(req,res,next) {
         var agi = req.query.agi || req.query.acc;
         get_latest(agi,service_object(req),res);
@@ -107,7 +110,7 @@ MASCP.events.once('ready',function() {
 
     app.get('/data/latest/gator/:acc',function(req,res,next) {
         var acc = req.param('acc') || req.query.acc || req.query.agi;
-        get_latest(acc,service_object(req),res);        
+        get_latest(acc,service_object(req),res);
     });
 
     var service_object = function(req) {
@@ -137,13 +140,13 @@ MASCP.events.once('ready',function() {
             } else {
                 res.send(this.result ? this.result._raw_data : {"error" : "No data"},200);
             }
-        });        
+        });
     }
-    
+
     app.get('/data/latest/:resource',function(req,res,next) {
         get_latest(req.param('agi'), service_object(req),res);
     });
-    
+
     app.get('/data/latest/:resource/:agi',function(req,res,next) {
         get_latest(req.param('agi'), service_object(req), res);
     });

@@ -5,7 +5,7 @@ var READER_CONF = (function() {
             continue;
         }
         vals[arguments[i]] = arguments[i+1];
-        if (MASCP.LOCALSERVER) {        
+        if (MASCP.LOCALSERVER) {
             vals[arguments[i]].url = ((vals[arguments[i]].url || arguments[i].SERVICE_URL).indexOf('?') >= 0) ? '/data/latest/gator' : '/data/latest/gator/';
         }
     }
@@ -41,10 +41,10 @@ var READER_CONF = (function() {
                                 var loc_key = null;
                                 for (loc_key in loc_data) {
                                     if (loc_data.hasOwnProperty(loc_key)) {
-                                        jQuery('#suba_results tbody').append("<tr><td>Prediction "+loc_key+"</td><td>"+loc_data[loc_key].length+"</td></tr>");                    
+                                        jQuery('#suba_results tbody').append("<tr><td>Prediction "+loc_key+"</td><td>"+loc_data[loc_key].length+"</td></tr>");
                                     }
                                 }
-                            });                
+                            });
 
                             var tagvis = new MASCP.TagVisualisation("suba_tags",[MASCP.TagVisualisation.TagCloud]);
                             tagvis.tagColumn = 0;
@@ -57,13 +57,13 @@ var READER_CONF = (function() {
                                     original_tag = the_tag;
                                 }
                                 if ((the_tag = original_tag.replace(/GFP /,'')) != original_tag) {
-                                    span.style.color = '#00ff00';                        
+                                    span.style.color = '#00ff00';
                                     original_tag = the_tag;
                                 }
                                 if ((the_tag = original_tag.replace(/Prediction /,'')) != original_tag) {
-                                    span.style.color = '#aaaaaa';                        
-                                    original_tag = the_tag;                        
-                                }                    
+                                    span.style.color = '#aaaaaa';
+                                    original_tag = the_tag;
+                                }
                                 span.textContent = original_tag;
                                 span.innerText = original_tag;
 
@@ -74,7 +74,7 @@ var READER_CONF = (function() {
                                 span.appendChild(valuespan);
 
                                 return span;
-                            };                
+                            };
                             tagvis.visualisations[0].update(1);
                             jQuery('#suba .rich_tagcloud').masonry({ 'itemSelector' : '.rich_tagcloud_tag', 'animate': true });
                         },
@@ -91,8 +91,8 @@ var READER_CONF = (function() {
                                 }
                             },
         'layers'        : ['atchloro_experimental']
-    },    
-    MASCP.PromexReader, { 
+    },
+    MASCP.PromexReader, {
         'definition'    : MASCP.PromexReader,
         'nicename'      : 'ProMEX',
         'error_url'     : 'http://promex.pph.univie.ac.at/promex/',
@@ -105,7 +105,7 @@ var READER_CONF = (function() {
         'layers'        : ['promex_experimental'],
         'placeholder'   : true
     },
-    /*MASCP.InterproReader, { 
+    /*MASCP.InterproReader, {
         'definition'    : MASCP.InterproReader,
         'nicename'      : 'Interpro',
         'error_url'     : 'http://www.ebi.ac.uk/interpro/',
@@ -127,7 +127,7 @@ var READER_CONF = (function() {
         'placeholder'   : true,
         'layers'        : ['arbitrary_datasets']
     },
-    MASCP.GelMapReader, { 
+    MASCP.GelMapReader, {
         'definition'    : MASCP.GelMapReader,
         'nicename'      : 'GelMap',
         'error_url'     : 'http://www.gelmap.de/',
@@ -147,7 +147,7 @@ var READER_CONF = (function() {
                                 for (loc_key in this.result.spectra) {
                                     if (this.result.spectra.hasOwnProperty(loc_key)) {
                                         var long_name = this.result._long_name_map[loc_key];
-                                        var count = this.result.spectra[loc_key];                    
+                                        var count = this.result.spectra[loc_key];
                                         document.getElementById('tissue_results').updateKey(long_name,count);
                                     }
                                 }
@@ -227,10 +227,10 @@ var READER_CONF = (function() {
     MASCP.SnpReader, {
         'definition'    : MASCP.SnpReader,
         'nicename'      : 'Snps',
-        'result'        : function() {            
+        'result'        : function() {
         },
         'error_url'     : 'http://1001proteomes.masc-proteomics.org/',
-        'success_url'   : 'http://1001proteomes.masc-proteomics.org/##',        
+        'success_url'   : 'http://1001proteomes.masc-proteomics.org/##',
         'layers'        : ['insertions_controller']
     },
     MASCP.RnaEditReader, {
@@ -245,11 +245,11 @@ var READER_CONF = (function() {
         'error_url'     : 'http://phosphat.mpimp-golm.mpg.de',
         'success_url'   : 'http://phosphat.mpimp-golm.mpg.de/app.html?agi=',
         'result'        : function() {
-                            if (this.result.getAllExperimentalPositions().length > 0) {                 
+                            if (this.result.getAllExperimentalPositions().length > 0) {
                                 jQuery('#phosphat_experimental').show();
                                 MASCP.renderer.showLayer('phosphat_experimental');
                             } else if (this.result.getAllPredictedPositions().length > 0) {
-                                jQuery('#phosphat_theoretical').show();                 
+                                jQuery('#phosphat_theoretical').show();
                             }
                             var tissues = this.result.getSpectra();
                             var loc_key = null;
@@ -270,12 +270,40 @@ var READER_CONF = (function() {
         'error_url'     : 'https://database.riken.jp/sw/links/en/ria102i/',
         'success_url'   : 'https://database.riken.jp/sw/links/en/ria102i/?refagi=',
         'result'        :  function() {
-                            if (this.result.getSpectra().length > 0) {                 
+                            if (this.result.getSpectra().length > 0) {
                                 jQuery('#prippdb_experimental').show();
                                 MASCP.renderer.showLayer('prippdb_experimental');
                             }
                         },
         'layers'        : ['prippdb_experimental']
+    },
+    MASCP.MoxReader ,  {
+        'definition'    :  MASCP.MoxReader,
+        'nicename'      : 'Met Oxidation',
+        'error_url'     : '',
+        'success_url'   : '',
+        'result'        :  function() {
+                            if (this.result.getPeptides().length > 0) {
+                                jQuery('#mox_experimental').show();
+                                MASCP.renderer.showLayer('mox_experimental');
+                            }
+                        },
+        'layers'        : ['mox_experimental'],
+        'staticlink'    : true
+    },
+    MASCP.SnoReader ,  {
+        'definition'    :  MASCP.SnoReader,
+        'nicename'      : 'S-Nitrosylation',
+        'error_url'     : '',
+        'success_url'   : '',
+        'result'        :  function() {
+                            if (this.result.getPeptides().length > 0) {
+                                jQuery('#sno_experimental').show();
+                                MASCP.renderer.showLayer('sno_experimental');
+                            }
+                        },
+        'layers'        : ['sno_experimental'],
+        'staticlink'    : true
     },
     MASCP.GlycoModReader ,  {
         'definition'    :  MASCP.GlycoModReader,
@@ -283,7 +311,7 @@ var READER_CONF = (function() {
         'error_url'     : 'http://www.ncbi.nlm.nih.gov/pubmed/22633491',
         'success_url'   : 'http://www.ncbi.nlm.nih.gov/pubmed/22633491',
         'result'        :  function() {
-                            if (this.result.getPeptides().length > 0) {                 
+                            if (this.result.getPeptides().length > 0) {
                                 jQuery('#glycomod_experimental').show();
                                 MASCP.renderer.showLayer('glycomod_experimental');
                             }
@@ -306,6 +334,12 @@ var READER_CONF = (function() {
         'nicename'      : 'Ubiquitin',
         'result'        : function() {},
         'layers'        : ['ubiquitin_experimental']
+    },
+    MASCP.NTermReader, {
+        'definition'    : MASCP.NTermReader,
+        'nicename'      : 'N-Terminal Processing',
+        'result'        : function() {},
+        'layers'        : ['nterm_experimental']
     },
     MASCP.ProcessingReader, {
         'definition'    : MASCP.ProcessingReader,
